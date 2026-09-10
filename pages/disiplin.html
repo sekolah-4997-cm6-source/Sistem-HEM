@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disiplin & Sahsiah | SK (FELDA) LAKA SELATAN</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex">
+
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Content Canvas -->
+  <main class="flex-1 ml-64 p-6 space-y-6">
+
+    <!-- Topbar Header -->
+    <header class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-bold text-slate-800">Disiplin & Sahsiah Murid</h1>
+        <p class="text-xs text-slate-500">Perekodan Salah Laku, Amalan Baik & Tindakan SSDM</p>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Panel Kiri: Borang Tambah Kes Baru -->
+      <section class="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm self-start">
+        <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2 mb-4 flex items-center space-x-2">
+          <i class="fa-solid fa-gavel text-slate-500"></i>
+          <span>Lapor Kes Baharu</span>
+        </h2>
+
+        <form id="borang-disiplin" class="space-y-4 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Nama Murid / MyKid *</label>
+            <input type="text" id="input-murid-kes" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none uppercase" placeholder="Cari murid...">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Tarikh & Masa Kejadian *</label>
+            <input type="datetime-local" id="input-tarikh-kes" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Kategori Kes *</label>
+            <select id="kategori-kes" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none">
+              <option value="">-- Pilih Kategori --</option>
+              <option value="BERAT">Salah Laku Berat (Buli/Rokok)</option>
+              <option value="SEDERHANA">Salah Laku Sederhana</option>
+              <option value="RINGAN">Salah Laku Ringan</option>
+              <option value="PONTENG">Ponteng Sekolah</option>
+              <option value="AMALAN_BAIK">Amalan Baik (Sahsiah Terpuji)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Keterangan Ringkas / Tindakan *</label>
+            <textarea id="keterangan-kes" rows="3" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none" placeholder="Cth: Diberi amaran lisan dan sesi kaunseling..."></textarea>
+          </div>
+
+          <button type="submit" class="w-full py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow-md transition">
+            <i class="fa-solid fa-plus mr-1"></i> Simpan Rekod
+          </button>
+        </form>
+      </section>
+
+      <!-- Panel Kanan: Senarai Kes Terkini -->
+      <section class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Rekod Disiplin Terkini</h2>
+          <span class="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-1 rounded">2 Kes Kritikal Belum Selesai</span>
+        </div>
+        
+        <div class="p-4 flex-1 overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-700 text-white uppercase text-[10px] tracking-wider border-b border-slate-600">
+                <th class="p-2">Tarikh</th>
+                <th class="p-2">Murid</th>
+                <th class="p-2">Kategori</th>
+                <th class="p-2">Keterangan</th>
+                <th class="p-2 text-center">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="jadual-disiplin-body" class="divide-y divide-slate-200 text-slate-700">
+              <!-- Data akan dijana oleh disiplin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <script src="../js/auth_guard.js" type="module"></script>
+  <script src="../js/components/sidebar.js" type="module"></script>
+  <script src="../js/disiplin.js" type="module"></script>
+</body>
+</html>

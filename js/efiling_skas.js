@@ -176,5 +176,3 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   langganFail(standardAktif);
-
-  <script type="module" src="../js/efiling_skas.js"></script>

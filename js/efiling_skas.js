@@ -85,74 +85,94 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
+  
+  // 1. Pilihan folder
+  if (folderCards.length > 0) {
+    folderCards.forEach(card => {
+      card.addEventListener("click", () => {
+        standardAktif = card.getAttribute("data-standard");
+        
+        // Buat highlight visual pada folder yang diklik
+        folderCards.forEach(c => c.classList.remove("ring-2", "ring-amber-500"));
+        card.classList.add("ring-2", "ring-amber-500");
 
-  folderCards.forEach(card => {
-    card.addEventListener("click", () => {
-      standardAktif = card.getAttribute("data-standard");
-      tajukFolder.innerHTML = `<i class="fa-solid fa-folder-open text-amber-500 mr-2"></i> Senarai Fail: ${tajukStandardMap[standardAktif]}`;
-      langganFail(standardAktif);
-    });
-  });
-
-  btnMuatNaik.addEventListener("click", () => modalUpload.classList.remove("hidden"));
-  btnTutupUpload.addEventListener("click", () => modalUpload.classList.add("hidden"));
-
-  // Proses Hantar ke Google Drive (via GAS) + Simpan Link ke Firestore
-  formUpload.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const nama = document.getElementById("upload-nama").value;
-    const std = document.getElementById("upload-standard").value;
-    const fileInput = document.getElementById("upload-file");
-    const file = fileInput.files[0];
-
-    if (!file) return;
-
-    const btnSubmit = formUpload.querySelector("button[type='submit']");
-    btnSubmit.disabled = true;
-    btnSubmit.textContent = "Memuat naik ke Google Drive...";
-
-    try {
-      // 1. Tukar fail ke Base64
-      const base64Data = await fileToBase64(file);
-
-      // 2. Hantar payload ke Google Apps Script
-      const response = await fetch(GAS_WEB_APP_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          base64: base64Data,
-          mimeType: file.type,
-          fileName: `${Date.now()}_${file.name}`
-        })
+        if (tajukFolder) {
+          tajukFolder.innerHTML = `<i class="fa-solid fa-folder-open text-amber-500 mr-2"></i> Senarai Fail: ${tajukStandardMap[standardAktif]}`;
+        }
+        langganFail(standardAktif);
       });
+    });
+  }
 
-      const result = await response.json();
+  // 2. Pembaikan Modal Muat Naik (Null check supaya tak crash jika tiada butang)
+  if (btnMuatNaik && modalUpload) {
+    btnMuatNaik.addEventListener("click", () => modalUpload.classList.remove("hidden"));
+  }
 
-      if (result.status === "success") {
-        // 3. Simpan URL Google Drive ke Firestore
-        await addDoc(collection(db, "efiling"), {
-          nama: nama,
-          standard: std,
-          tarikh: new Date().toISOString().split('T')[0],
-          saiz: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-          fileUrl: result.fileUrl,
-          driveFileId: result.fileId
+  if (btnTutupUpload && modalUpload) {
+    btnTutupUpload.addEventListener("click", (e) => {
+      e.preventDefault(); // Elak page refresh
+      modalUpload.classList.add("hidden");
+    });
+  }
+
+  // 3. Proses Hantar ke Google Drive (via GAS) dibalut dengan pelindung if(formUpload)
+  if (formUpload) {
+    formUpload.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nama = document.getElementById("upload-nama").value;
+      const std = document.getElementById("upload-standard").value;
+      const fileInput = document.getElementById("upload-file");
+      const file = fileInput.files[0];
+
+      if (!file) return;
+
+      const btnSubmit = formUpload.querySelector("button[type='submit']");
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = "Memuat naik ke Google Drive...";
+
+      try {
+        const base64Data = await fileToBase64(file);
+
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            base64: base64Data,
+            mimeType: file.type,
+            fileName: `${Date.now()}_${file.name}`
+          })
         });
 
-        formUpload.reset();
-        modalUpload.classList.add("hidden");
-        alert("Fail berjaya disimpan dalam Google Drive & Firestore!");
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (error) {
-      console.error("Ralat muat naik:", error);
-      alert("Gagal memuat naik fail ke Google Drive. Sila semak sambungan/GAS URL.");
-    } finally {
-      btnSubmit.disabled = false;
-      btnSubmit.textContent = "Simpan ke e-Filing";
-    }
-  });
+        const result = await response.json();
 
-  searchFail.addEventListener("input", renderJadualFail);
+        if (result.status === "success") {
+          await addDoc(collection(db, "efiling"), {
+            nama: nama,
+            standard: std,
+            tarikh: new Date().toISOString().split('T')[0],
+            saiz: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+            fileUrl: result.fileUrl,
+            driveFileId: result.fileId
+          });
+
+          formUpload.reset();
+          modalUpload.classList.add("hidden");
+          alert("Fail berjaya disimpan dalam Google Drive & Firestore!");
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        console.error("Ralat muat naik:", error);
+        alert("Gagal memuat naik fail ke Google Drive. Sila semak sambungan/GAS URL.");
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "Simpan ke e-Filing";
+      }
+    });
+  }
+
+  if (searchFail) {
+    searchFail.addEventListener("input", renderJadualFail);
+  }
+  
   langganFail(standardAktif);
-});

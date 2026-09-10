@@ -1,4 +1,6 @@
 // js/components/sidebar.js
+import { auth } from "../firebase_config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const sidebarContainer = document.getElementById("sidebar-container");
@@ -34,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <span>Sahsiah & Disiplin</span>
           </a>
 
-          <!-- PEMBAIKAN: Pautan Kebajikan & Bantuan dibaiki di sini -->
           <a href="laporan_bantuan.html" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-700 transition w-full text-slate-300 hover:text-white">
             <i class="fa-solid fa-hand-holding-dollar w-5"></i>
             <span>Kebajikan & Bantuan</span>
@@ -55,5 +56,22 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </aside>
     `;
+
+    // Panggil event listener terus selepas elemen disuntik ke DOM
+    const btnLogout = document.getElementById("btn-logout-sidebar");
+    if (btnLogout) {
+      btnLogout.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (confirm("Adakah anda pasti untuk log keluar sistem?")) {
+          try {
+            await signOut(auth);
+            window.location.href = "../index.html";
+          } catch (error) {
+            console.error("Ralat log keluar:", error);
+            alert("Gagal log keluar: " + error.message);
+          }
+        }
+      });
+    }
   }
 });

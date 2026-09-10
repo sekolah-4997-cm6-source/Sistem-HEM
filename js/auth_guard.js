@@ -1,5 +1,5 @@
 // js/auth_guard.js
-import { auth } from "./firebase_config.js";
+import { auth } from "./firebase-config.js";
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {

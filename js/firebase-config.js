@@ -1,11 +1,11 @@
-// js/firebase-config.js
+// js/firebase_config.js
 
-// Import Firebase SDK v10 melalui CDN (ES Modules)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+// 1. Import Firebase Core & Firestore
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; // (Untuk login nanti)
 
-// Tetapan Konfigurasi Firebase Projek SK (FELDA) LAKA SELATAN
+// 2. Masukkan Config Firebase Anda
 const firebaseConfig = {
   apiKey: "AIzaSyBzC6gvRgNHgG79cHpVAIUk86XazXdzL1w",
   authDomain: "hem-skfls.firebaseapp.com",
@@ -15,10 +15,7 @@ const firebaseConfig = {
   appId: "1:339815291908:web:ba4730238a7df1b17c2951"
 };
 
-// Inisialisasi Firebase
+// 3. Initialize Firebase & Export 'db' (INI PALING PENTING UNTUK HILANGKAN RALAT)
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// Export modul untuk diguna pakai dalam fail JS lain
-export { app, auth, db };
+export const auth = getAuth(app);
+export const db = getFirestore(app);

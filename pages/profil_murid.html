@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil Murid | SK (FELDA) LAKA SELATAN</title>
+  
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex">
+
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Content Canvas -->
+  <main class="flex-1 ml-64 p-6 space-y-6">
+
+    <!-- Topbar Header -->
+    <header class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-bold text-slate-800">Borang Profil Murid & PB1/PB2</h1>
+        <p class="text-xs text-slate-500">Pengurusan Data Induk, Sosioekonomi, dan Lampiran Dokumen</p>
+      </div>
+      <a href="senarai_murid.html" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3 py-2 rounded-lg font-semibold transition">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Senarai
+      </a>
+    </header>
+
+    <!-- Borang Utama -->
+    <form id="profil-murid-form" class="space-y-6">
+      
+      <!-- Bahagian 1: Maklumat Peribadi Murid -->
+      <section class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2 flex items-center space-x-2">
+          <i class="fa-solid fa-user-graduate text-slate-500"></i>
+          <span>1. Maklumat Peribadi Murid</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="md:col-span-2">
+            <label class="block font-semibold text-slate-600 mb-1">Nama Penuh Murid *</label>
+            <input type="text" id="nama-murid" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none uppercase" placeholder="Contoh: AHMAD BIN ABU">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">No. MyKid / Sijil Lahir *</label>
+            <input type="text" id="no-mykid" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none" placeholder="123456021234">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Kelas *</label>
+            <select id="kelas-id" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none">
+              <option value="">-- Pilih Kelas --</option>
+              <option value="1A">1 Alpha</option>
+              <option value="2A">2 Alpha</option>
+              <option value="3A">3 Alpha</option>
+              <option value="4A">4 Alpha</option>
+              <option value="5A">5 Alpha</option>
+              <option value="6A">6 Alpha</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Jantina *</label>
+            <select id="jantina" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none">
+              <option value="L">Lelaki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Alahan / Catatan Kesihatan (3K)</label>
+            <input type="text" id="alahan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none" placeholder="Contoh: Asma / Alahan Penicillin">
+          </div>
+        </div>
+      </section>
+
+      <!-- Bahagian 2: Maklumat Keluarga & Pengiraan PB1/PB2 -->
+      <section class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2 flex items-center space-x-2">
+          <i class="fa-solid fa-users text-slate-500"></i>
+          <span>2. Maklumat Waris & Sosioekonomi (PB1/PB2)</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Nama Waris Utama (Bapa/Penjaga) *</label>
+            <input type="text" id="nama-penjaga" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none uppercase">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">No. Tel Utama (Panggilan/WA) *</label>
+            <input type="tel" id="no-telefon" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none" placeholder="0123456789">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">No. Tel Kecemasan (Ibu/Waris 2)</label>
+            <input type="tel" id="no-telefon-kecemasan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none" placeholder="0198765432">
+          </div>
+
+          <div class="md:col-span-3">
+            <label class="block font-semibold text-slate-600 mb-1">Alamat Kediaman Lengkap *</label>
+            <textarea id="alamat-lengkap" rows="2" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none"></textarea>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Pendapatan Bulanan (RM) *</label>
+            <input type="number" id="pendapatan-bulanan" step="0.01" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none" placeholder="1500.00">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Bilangan Tanggungan Isi Rumah *</label>
+            <input type="number" id="bilangan-tanggungan" min="1" value="1" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Gaji Perkapita (Automatik)</label>
+            <div id="gaji-perkapita-display" class="w-full p-2.5 bg-slate-200 border border-slate-300 rounded-lg font-bold text-slate-800">
+              RM 0.00
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bahagian 3: Senarai Semak Lampiran Dokumen -->
+      <section class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center space-x-2">
+            <i class="fa-solid fa-list-check text-slate-500"></i>
+            <span>3. Senarai Semak Lampiran Dokumen</span>
+          </h2>
+          <span id="status-dokumen-badge" class="px-2.5 py-1 text-xs font-bold rounded bg-red-100 text-red-700">
+            🔴 Dokumen Tidak Lengkap
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <label class="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
+            <input type="checkbox" id="chk-sijil-lahir" class="doc-checkbox w-4 h-4 text-slate-700 rounded focus:ring-slate-500">
+            <span class="font-medium text-slate-700">Salinan Sijil Lahir Murid</span>
+          </label>
+
+          <label class="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
+            <input type="checkbox" id="chk-ic-ibu-bapa" class="doc-checkbox w-4 h-4 text-slate-700 rounded focus:ring-slate-500">
+            <span class="font-medium text-slate-700">Salinan Kad Pengenalan Ibu & Bapa</span>
+          </label>
+
+          <label class="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
+            <input type="checkbox" id="chk-slip-gaji" class="doc-checkbox w-4 h-4 text-slate-700 rounded focus:ring-slate-500">
+            <span class="font-medium text-slate-700">Slip Gaji / Borang Pengesahan PB2</span>
+          </label>
+
+          <label class="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
+            <input type="checkbox" id="chk-bil-utiliti" class="doc-checkbox w-4 h-4 text-slate-700 rounded focus:ring-slate-500">
+            <span class="font-medium text-slate-700">Salinan Bil Utiliti (Air / Elektrik)</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Butang Tindakan -->
+      <div class="flex justify-end space-x-3">
+        <a href="senarai_murid.html" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg text-xs transition">
+          Batal
+        </a>
+        <button type="submit" id="btn-simpan-profil" class="px-6 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow-md transition">
+          <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Profil Murid
+        </button>
+      </div>
+
+    </form>
+
+  </main>
+
+  <!-- Skrip Pengesahan & Logik -->
+  <script src="../js/auth_guard.js" type="module"></script>
+  <script src="../js/components/sidebar.js" type="module"></script>
+  <script src="../js/profil_murid.js" type="module"></script>
+</body>
+</html>

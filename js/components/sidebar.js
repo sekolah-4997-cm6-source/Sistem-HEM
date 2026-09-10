@@ -1,7 +1,4 @@
 // js/components/sidebar.js
-import { auth } from "../firebase_config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
 document.addEventListener("DOMContentLoaded", () => {
   const sidebarContainer = document.getElementById("sidebar-container");
 
@@ -49,29 +46,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <!-- Log Keluar -->
         <div class="p-4 border-t border-slate-700">
-          <button id="btn-logout-sidebar" class="flex items-center space-x-3 p-3 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 w-full transition">
+          <button id="btn-logout-sidebar" type="button" class="flex items-center space-x-3 p-3 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 w-full transition">
             <i class="fa-solid fa-right-from-bracket w-5"></i>
             <span>Log Keluar</span>
           </button>
         </div>
       </aside>
     `;
-
-    // Panggil event listener terus selepas elemen disuntik ke DOM
-    const btnLogout = document.getElementById("btn-logout-sidebar");
-    if (btnLogout) {
-      btnLogout.addEventListener("click", async (e) => {
-        e.preventDefault();
-        if (confirm("Adakah anda pasti untuk log keluar sistem?")) {
-          try {
-            await signOut(auth);
-            window.location.href = "../index.html";
-          } catch (error) {
-            console.error("Ralat log keluar:", error);
-            alert("Gagal log keluar: " + error.message);
-          }
-        }
-      });
-    }
   }
 });

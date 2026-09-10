@@ -1,7 +1,9 @@
 // js/efiling_skas.js
-import { db, storage } from "./firebase_config.js";
+import { db } from "./firebase_config.js";
 import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+// Masukkan Web App URL dari Google Apps Script anda di sini
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw4CYmaa7QxCnXrFPHPkD0ZWZO8SJxPDK3tFK_XeWJ5Z4BxXgxKP0wQe1cW2h0RnEiPug/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   const folderCards = document.querySelectorAll(".folder-card");
@@ -24,10 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
     "S4": "Standard 4 (PdPC Guru)"
   };
 
-  // Muat data fail mengikut Standard Folder yang dipilih
+  // Helper: Tukar Fail ke Base64
+  const fileToBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+  });
+
   function langganFail(standard) {
     const q = query(collection(db, "efiling"), where("standard", "==", standard));
-    
     onSnapshot(q, (snapshot) => {
       senaraiFail = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       renderJadualFail();
@@ -37,7 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderJadualFail() {
     jadualFailBody.innerHTML = "";
     const keyword = searchFail.value.toLowerCase();
-
     const failTapis = senaraiFail.filter(f => f.nama.toLowerCase().includes(keyword));
 
     if (failTapis.length === 0) {
@@ -57,10 +64,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <td class="p-3 text-slate-500 text-[11px]">${fail.tarikh}</td>
         <td class="p-3 text-slate-500 text-[11px]">${fail.saiz}</td>
         <td class="p-3 text-center space-x-2">
-          <a href="${fail.fileUrl}" target="_blank" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[10px] font-semibold transition inline-block" title="Buka / Muat Turun">
-            <i class="fa-solid fa-download"></i>
+          <a href="${fail.fileUrl}" target="_blank" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[10px] font-semibold transition inline-block" title="Buka di Drive">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
           </a>
-          <button data-id="${fail.id}" data-path="${fail.storagePath}" class="btn-padam-fail bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-[10px] font-semibold transition" title="Padam">
+          <button data-id="${fail.id}" class="btn-padam-fail bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-[10px] font-semibold transition" title="Padam Rekod">
             <i class="fa-solid fa-trash"></i>
           </button>
         </td>
@@ -68,25 +75,17 @@ document.addEventListener("DOMContentLoaded", () => {
       jadualFailBody.appendChild(tr);
     });
 
-    // Event Listener Padam Fail
     document.querySelectorAll(".btn-padam-fail").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", async () => {
         const docId = btn.getAttribute("data-id");
-        const storagePath = btn.getAttribute("data-path");
-        if (confirm("Adakah anda pasti mahu memadam fail ini?")) {
-          try {
-            if (storagePath) await deleteObject(ref(storage, storagePath));
-            await deleteDoc(doc(db, "efiling", docId));
-            alert("Fail berjaya dipadam!");
-          } catch (err) {
-            console.error("Ralat memadam fail:", err);
-          }
+        if (confirm("Adakah anda pasti mahu memadam rekod fail ini dari senarai?")) {
+          await deleteDoc(doc(db, "efiling", docId));
+          alert("Rekod berjaya dipadam!");
         }
       });
     });
   }
 
-  // Tukar Folder Card
   folderCards.forEach(card => {
     card.addEventListener("click", () => {
       standardAktif = card.getAttribute("data-standard");
@@ -95,11 +94,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Kawalan Modal
   btnMuatNaik.addEventListener("click", () => modalUpload.classList.remove("hidden"));
   btnTutupUpload.addEventListener("click", () => modalUpload.classList.add("hidden"));
 
-  // Proses Muat Naik ke Storage + Firestore
+  // Proses Hantar ke Google Drive (via GAS) + Simpan Link ke Firestore
   formUpload.addEventListener("submit", async (e) => {
     e.preventDefault();
     const nama = document.getElementById("upload-nama").value;
@@ -111,31 +109,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const btnSubmit = formUpload.querySelector("button[type='submit']");
     btnSubmit.disabled = true;
-    btnSubmit.textContent = "Memuat naik...";
+    btnSubmit.textContent = "Memuat naik ke Google Drive...";
 
     try {
-      // 1. Muat naik fizikal fail ke Firebase Storage
-      const storagePath = `efiling/${std}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
+      // 1. Tukar fail ke Base64
+      const base64Data = await fileToBase64(file);
 
-      // 2. Simpan rekod metadata ke Firestore
-      await addDoc(collection(db, "efiling"), {
-        nama: nama,
-        standard: std,
-        tarikh: new Date().toISOString().split('T')[0],
-        saiz: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        fileUrl: downloadURL,
-        storagePath: storagePath
+      // 2. Hantar payload ke Google Apps Script
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          base64: base64Data,
+          mimeType: file.type,
+          fileName: `${Date.now()}_${file.name}`
+        })
       });
 
-      formUpload.reset();
-      modalUpload.classList.add("hidden");
-      alert("Evidens berjaya dimuat naik ke Firebase!");
+      const result = await response.json();
+
+      if (result.status === "success") {
+        // 3. Simpan URL Google Drive ke Firestore
+        await addDoc(collection(db, "efiling"), {
+          nama: nama,
+          standard: std,
+          tarikh: new Date().toISOString().split('T')[0],
+          saiz: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+          fileUrl: result.fileUrl,
+          driveFileId: result.fileId
+        });
+
+        formUpload.reset();
+        modalUpload.classList.add("hidden");
+        alert("Fail berjaya disimpan dalam Google Drive & Firestore!");
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error) {
       console.error("Ralat muat naik:", error);
-      alert("Gagal memuat naik fail. Sila cuba lagi.");
+      alert("Gagal memuat naik fail ke Google Drive. Sila semak sambungan/GAS URL.");
     } finally {
       btnSubmit.disabled = false;
       btnSubmit.textContent = "Simpan ke e-Filing";
@@ -143,7 +154,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   searchFail.addEventListener("input", renderJadualFail);
-
-  // Mula membaca folder pertama (S1) semasa halaman dimuatkan
   langganFail(standardAktif);
 });

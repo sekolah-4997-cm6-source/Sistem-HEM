@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <!-- Menu Navigasi -->
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto text-sm">
-          <a href="dashboard.html" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-700 transition w-full text-slate-300 hover:text-white">
+          <a href="admin.html" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-700 transition w-full text-slate-300 hover:text-white">
             <i class="fa-solid fa-chart-pie w-5"></i>
             <span>Papan Pemuka</span>
           </a>

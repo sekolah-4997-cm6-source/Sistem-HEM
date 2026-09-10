@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Papan Pemuka | SK (FELDA) LAKA SELATAN</title>
+  
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js untuk Graf -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex">
+
+  <!-- Container Sidebar (Dijana secara automatik oleh sidebar.js) -->
+  <div id="sidebar-container"></div>
+
+  <!-- Ruang Kandungan Utama (Main Content Canvas) -->
+  <main class="flex-1 ml-64 p-6 space-y-6">
+
+    <!-- Topbar Header -->
+    <header class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-bold text-slate-800">SK (FELDA) LAKA SELATAN</h1>
+        <p class="text-xs text-slate-500">SISTEM HEM (ONE-STOP CENTRE)</p>
+      </div>
+
+      <!-- Carian Pantas & Profil -->
+      <div class="flex items-center space-x-4">
+        <div class="relative w-64">
+          <input type="text" id="quick-search-input" placeholder="🔍 Cari Murid / Dokumen..." 
+            class="w-full pl-3 pr-8 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500">
+        </div>
+        <div class="flex items-center space-x-2 border-l border-slate-200 pl-4">
+          <div class="w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center font-bold text-xs">
+            PK
+          </div>
+          <span class="text-xs font-semibold text-slate-700">PKHEM</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top Alert Bar Kritikal -->
+    <section class="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm space-y-2">
+      <div class="flex items-center space-x-2 text-red-700 font-bold text-xs tracking-wider uppercase">
+        <i class="fa-solid fa-triangle-exclamation text-base"></i>
+        <span>Alert Bar Kritikal</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-red-200">
+          <span class="text-slate-700">🔴 <strong>Disiplin Kritikal:</strong> Buli (Ahmad Bin Abu - 6A)</span>
+          <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-[11px] font-semibold transition">Tindak / Semak</button>
+        </div>
+        <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-amber-200">
+          <span class="text-slate-700">🟡 <strong>Amaran Ponteng:</strong> >3 Hari Tanpa Sebab (Siti - 5B)</span>
+          <button class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-[11px] font-semibold transition">Jana Surat PDF</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row Metric Cards KPI -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-semibold text-slate-500 uppercase">Enrolmen Murid</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">850 <span class="text-xs font-normal text-slate-500">(430L / 420P)</span></p>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-semibold text-slate-500 uppercase">Kehadiran Hari Ini</p>
+        <p class="text-2xl font-bold text-emerald-600 mt-1">96.2%</p>
+        <span class="inline-block mt-1 text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded">🟢 KPI Tercapai</span>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-semibold text-slate-500 uppercase">Murid B40 / RMT</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">120 <span class="text-xs font-normal text-slate-500">Layak RMT</span></p>
+        <span class="inline-block mt-1 text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded">🟡 Perlu Semak</span>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-semibold text-slate-500 uppercase">Kes Disiplin Aktif</p>
+        <p class="text-2xl font-bold text-red-600 mt-1">2 Kes</p>
+        <span class="inline-block mt-1 text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded">🔴 Action Req</span>
+      </div>
+    </section>
+
+    <!-- Row Graf Visual -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-700 mb-4">Graf Enrolmen (Donut Chart)</h3>
+        <div class="h-64 flex justify-center items-center">
+          <canvas id="enrolmenChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-700 mb-4">Trend Kehadiran Bulanan (Bar Chart)</h3>
+        <div class="h-64">
+          <canvas id="kehadiranChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Section: SK@S & Takwim -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Status e-Filing SK@S -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-700">e-Filing SK@S (7 Aspek Standard 3.3)</h3>
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between items-center p-2 bg-slate-50 rounded">
+            <span>3.3.1 Ketetapan HEM</span>
+            <span class="font-bold text-emerald-600">100%</span>
+          </div>
+          <div class="flex justify-between items-center p-2 bg-slate-50 rounded">
+            <span>3.3.2 Disiplin Murid</span>
+            <span class="font-bold text-emerald-600">90%</span>
+          </div>
+          <div class="flex justify-between items-center p-2 bg-slate-50 rounded">
+            <span>3.3.5 Bantuan Pelajaran</span>
+            <span class="font-bold text-red-600">70%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Takwim & Log PIBKS -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-700">Takwim & Peringatan Program</h3>
+        <ul class="text-xs space-y-2 text-slate-600">
+          <li class="flex items-center space-x-2">
+            <i class="fa-regular fa-calendar text-slate-400"></i>
+            <span><strong>12 Sept:</strong> Latihan Kebakaran Tahun 2026</span>
+          </li>
+          <li class="flex items-center space-x-2">
+            <i class="fa-regular fa-calendar text-slate-400"></i>
+            <span><strong>20 Sept:</strong> Pengagihan BAP Phase 2</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Skrip Modul Pengesahan & Dashboard -->
+  <script src="../js/auth_guard.js" type="module"></script>
+  <script src="../js/components/sidebar.js" type="module"></script>
+  <script src="../js/admin.js" type="module"></script>
+</body>
+</html>

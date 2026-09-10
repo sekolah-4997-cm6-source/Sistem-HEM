@@ -1,5 +1,5 @@
 // js/efiling_skas.js
-import { db } from "./firebase_config.js";
+import { db } from "./firebase-config.js";
 import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Masukkan Web App URL dari Google Apps Script anda di sini

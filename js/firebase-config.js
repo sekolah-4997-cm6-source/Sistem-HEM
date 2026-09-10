@@ -6,14 +6,13 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Tetapan Konfigurasi Firebase Projek SK (FELDA) LAKA SELATAN
-// (Gantikan nilai dalam tanda petik di bawah dengan maklumat dari Firebase Console anda)
 const firebaseConfig = {
-  apiKey: "API_KEY_ANDA_DI_SINI",
-  authDomain: "sk-felda-laka-selatan.firebaseapp.com",
-  projectId: "sk-felda-laka-selatan",
-  storageBucket: "sk-felda-laka-selatan.appspot.com",
-  messagingSenderId: "SENDER_ID_ANDA",
-  appId: "APP_ID_ANDA"
+  apiKey: "AIzaSyBzC6gvRgNHgG79cHpVAIUk86XazXdzL1w",
+  authDomain: "hem-skfls.firebaseapp.com",
+  projectId: "hem-skfls",
+  storageBucket: "hem-skfls.firebasestorage.app",
+  messagingSenderId: "339815291908",
+  appId: "1:339815291908:web:ba4730238a7df1b17c2951"
 };
 
 // Inisialisasi Firebase

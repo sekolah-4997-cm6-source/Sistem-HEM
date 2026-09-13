@@ -1,6 +1,6 @@
 // js/disiplin.js
 
-import { db } from "./firebaseConfig.js"; // PASTIKAN EJAAN NAMA FAIL INI BETUL
+import { db } from "./firebase-config.js"; // PASTIKAN EJAAN NAMA FAIL INI BETUL
 import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {

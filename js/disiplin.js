@@ -1,35 +1,44 @@
 // js/disiplin.js
 
+import { db } from "./firebaseConfig.js"; // PASTIKAN EJAAN NAMA FAIL INI BETUL
+import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   const borangDisiplin = document.getElementById("borang-disiplin");
   const jadualDisiplin = document.getElementById("jadual-disiplin-body");
 
-  // Data Dummy untuk paparan awal rekod disiplin
-  let rekodDisiplin = [
-    {
-      id: 1, tarikh: "2026-09-08 10:30", murid: "AHMAD BIN ABU (6A)", 
-      kategori: "BERAT", keterangan: "Bergaduh di kantin.", status: "Kritikal"
-    },
-    {
-      id: 2, tarikh: "2026-09-07 08:00", murid: "SITI NURHALIZA (5B)", 
-      kategori: "PONTENG", keterangan: "Tidak hadir 3 hari berturut-turut tanpa surat.", status: "Amaran"
-    },
-    {
-      id: 3, tarikh: "2026-09-05 13:00", murid: "ALI BIN MUTHU (4A)", 
-      kategori: "AMALAN_BAIK", keterangan: "Memulangkan dompet guru.", status: "Pujian"
-    }
-  ];
+  // Array kosong untuk simpan data dari database
+  let senaraiRekod = [];
 
-  // Fungsi memaparkan rekod ke dalam jadual
+  // 1. Fungsi Langgan Data dari Firestore (Real-time)
+  function langganRekodDisiplin() {
+    if (!jadualDisiplin) return;
+    
+    // Susun data dari yang paling terkini (descending)
+    const q = query(collection(db, "disiplin"), orderBy("tarikh", "desc"));
+    
+    onSnapshot(q, (snapshot) => {
+      senaraiRekod = [];
+      snapshot.forEach((doc) => {
+        senaraiRekod.push({ id: doc.id, ...doc.data() });
+      });
+      renderJadualDisiplin();
+    }, (error) => {
+      console.error("Ralat mengambil data disiplin: ", error);
+    });
+  }
+
+  // 2. Fungsi memaparkan rekod ke dalam jadual
   function renderJadualDisiplin() {
+    if (!jadualDisiplin) return;
     jadualDisiplin.innerHTML = "";
 
-    if (rekodDisiplin.length === 0) {
-      jadualDisiplin.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500 text-xs">Tiada rekod buat masa ini.</td></tr>`;
+    if (senaraiRekod.length === 0) {
+      jadualDisiplin.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500 text-xs">Tiada rekod buat masa ini.</td></tr>`;
       return;
     }
 
-    rekodDisiplin.forEach((rekod) => {
+    senaraiRekod.forEach((rekod) => {
       let badgeKategori = "";
       // Logik Warna mengikut Kategori Kes
       if (rekod.kategori === "BERAT") {
@@ -52,51 +61,93 @@ document.addEventListener("DOMContentLoaded", () => {
         <td class="p-2 font-bold text-slate-800">${rekod.murid}</td>
         <td class="p-2">${badgeKategori}</td>
         <td class="p-2 truncate max-w-xs">${rekod.keterangan}</td>
-        <td class="p-2 text-center">
-          <button class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[10px] font-semibold transition">Semak</button>
+        <td class="p-2 text-center space-x-1">
+          <button data-id="${rekod.id}" class="btn-semak bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[10px] font-semibold transition">Semak</button>
+          <button data-id="${rekod.id}" class="btn-padam bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-[10px] font-semibold transition"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       jadualDisiplin.appendChild(tr);
     });
+
+    // Binding Event Listener untuk Butang Semak & Padam (Selepas HTML dijana)
+    document.querySelectorAll(".btn-semak").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        // Cari ID rekod dari butang yang ditekan
+        const id = e.currentTarget.getAttribute("data-id");
+        bukaPopupSemakan(id);
+      });
+    });
+
+    document.querySelectorAll(".btn-padam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        if(confirm("Adakah anda pasti mahu memadam rekod ini secara kekal?")) {
+           try {
+             await deleteDoc(doc(db, "disiplin", id));
+           } catch(error) {
+             console.error("Ralat memadam rekod:", error);
+             alert("Gagal memadam rekod.");
+           }
+        }
+      });
+    });
   }
 
-  // Fungsi Tambah Kes Baru
+  // 3. Fungsi Tambah Kes Baru (Hantar ke Firestore)
   if (borangDisiplin) {
-    borangDisiplin.addEventListener("submit", (e) => {
+    borangDisiplin.addEventListener("submit", async (e) => {
       e.preventDefault();
       
       const murid = document.getElementById("input-murid-kes").value.toUpperCase();
       const tarikh = document.getElementById("input-tarikh-kes").value;
       const kategori = document.getElementById("kategori-kes").value;
       const keterangan = document.getElementById("keterangan-kes").value;
-
-      const kesBaru = {
-        id: rekodDisiplin.length + 1,
-        tarikh: tarikh,
-        murid: murid,
-        kategori: kategori,
-        keterangan: keterangan,
-        status: "Baru"
-      };
-
-      // Tambah ke senarai teratas (unshift)
-      rekodDisiplin.unshift(kesBaru);
       
-      // Papar semula jadual
-      renderJadualDisiplin();
-      
-      // Kosongkan borang
-      borangDisiplin.reset();
+      const btnSubmit = borangDisiplin.querySelector("button[type='submit']");
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "Menyimpan ke Database...";
+      }
 
-      // Maklumkan jika ia kes berat (Trigger Alert Bar)
-      if (kategori === "BERAT") {
-        alert("AMARAN: Kes Salah Laku Berat telah direkodkan!\nAlert Bar Kritikal akan memaparkan notifikasi ini kepada Pentadbir.");
-      } else {
-        alert("Rekod telah berjaya disimpan.");
+      try {
+        await addDoc(collection(db, "disiplin"), {
+          murid: murid,
+          tarikh: tarikh,
+          kategori: kategori,
+          keterangan: keterangan,
+          status: "Baru",
+          timestamp: new Date().toISOString()
+        });
+
+        borangDisiplin.reset();
+
+        if (kategori === "BERAT") {
+          alert("AMARAN: Kes Salah Laku Berat telah direkodkan!\nMaklumat telah disimpan ke pangkalan data.");
+        } else {
+          alert("Rekod telah berjaya disimpan.");
+        }
+      } catch (error) {
+        console.error("Ralat menyimpan kes:", error);
+        alert("Gagal menyimpan rekod. Sila semak sambungan internet.");
+      } finally {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = "Simpan Rekod"; // Boleh tukar nama butang ikut kesesuaian
+        }
       }
     });
   }
 
-  // Paparan permulaan
-  renderJadualDisiplin();
+  // 4. Fungsi Buka Popup Semakan
+  function bukaPopupSemakan(id) {
+    const rekod = senaraiRekod.find(r => r.id === id);
+    if(rekod) {
+      // Buat masa ini kita paparkan dalam Alert Box kemas.
+      // Pada Fasa 5 (Janaan PDF), kita akan tukar ini kepada Modal Cetakan Rasmi.
+      alert(`📄 MAKLUMAT KES DISIPLIN\n\nNama Murid: ${rekod.murid}\nTarikh Kes: ${new Date(rekod.tarikh).toLocaleString('ms-MY')}\nKategori: ${rekod.kategori}\n\nLaporan:\n"${rekod.keterangan}"\n\nStatus Semasa: ${rekod.status}`);
+    }
+  }
+
+  // 5. Mulakan proses tarik data apabila fail dimuatkan
+  langganRekodDisiplin();
 });

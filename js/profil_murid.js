@@ -1,4 +1,6 @@
 // js/profil_murid.js
+import { db } from "./firebase-config.js";
+import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // --- 1. DOM Elements untuk Pengiraan Gaji Perkapita ---
@@ -18,24 +20,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   function kiraGajiPerkapita() {
     const pendapatan = parseFloat(pendapatanInput.value) || 0;
-    // Pastikan minimum tanggungan adalah 1 untuk mengelakkan ralat bahagi dengan sifar
     const tanggungan = parseInt(tanggunganInput.value) || 1; 
-
     const perkapita = pendapatan / tanggungan;
 
-    // Paparkan format RM
     perkapitaDisplay.textContent = `RM ${perkapita.toFixed(2)}`;
 
-    // Logik Tambahan: Jika perkapita <= RM310 (Kadar Kelayakan RMT/BAP), tukar warna amaran hijau
     if (perkapita > 0 && perkapita <= 310) {
       perkapitaDisplay.className = "w-full p-2.5 bg-emerald-100 border border-emerald-300 rounded-lg font-bold text-emerald-700";
     } else {
-      // Kembali kepada warna asal
       perkapitaDisplay.className = "w-full p-2.5 bg-slate-200 border border-slate-300 rounded-lg font-bold text-slate-800";
     }
   }
 
-  // Pasang Event Listener (Apabila pengguna menaip/mengubah nilai)
   pendapatanInput.addEventListener("input", kiraGajiPerkapita);
   tanggunganInput.addEventListener("input", kiraGajiPerkapita);
 
@@ -43,41 +39,75 @@ document.addEventListener("DOMContentLoaded", () => {
   // FUNGSI 2: SEMAK STATUS LAMPIRAN DOKUMEN
   // ==========================================
   function semakStatusDokumen() {
-    // Kira berapa kotak yang telah ditanda (checked)
     const jumlahChecked = document.querySelectorAll(".doc-checkbox:checked").length;
     const jumlahTotal = checkboxes.length;
 
     if (jumlahChecked === jumlahTotal) {
-      // Jika semua 4 ditanda, tukar kepada Lengkap (Hijau)
       statusBadge.innerHTML = "🟢 Dokumen Lengkap";
       statusBadge.className = "px-2.5 py-1 text-xs font-bold rounded bg-emerald-100 text-emerald-700";
     } else {
-      // Jika tidak cukup 4, kekal Tidak Lengkap (Merah)
       statusBadge.innerHTML = "🔴 Dokumen Tidak Lengkap";
       statusBadge.className = "px-2.5 py-1 text-xs font-bold rounded bg-red-100 text-red-700";
     }
   }
 
-  // Pasang Event Listener untuk setiap kotak semak
-  checkboxes.forEach(chk => {
-    chk.addEventListener("change", semakStatusDokumen);
-  });
+  checkboxes.forEach(chk => chk.addEventListener("change", semakStatusDokumen));
 
   // ==========================================
-  // FUNGSI 3: KAWALAN HANTAR BORANG (SUBMIT)
+  // FUNGSI 3: KAWALAN HANTAR BORANG (SUBMIT KE FIREBASE)
   // ==========================================
   if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault(); // Halang page dari refresh secara automatik
-
-      const namaMurid = document.getElementById("nama-murid").value.toUpperCase();
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault(); 
       
-      // Di sini nanti anda boleh pautkan dengan API/Database (seperti Firebase/MySQL)
-      // Buat masa ini kita paparkan notifikasi sukses
-      alert(`Rekod untuk profil murid:\n${namaMurid}\nTelah berjaya disimpan ke dalam sistem!`);
+      const btnSimpan = document.getElementById("btn-simpan-profil");
+      const teksAsalBtn = btnSimpan.innerHTML;
+      btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+      btnSimpan.disabled = true;
 
-      // Selepas berjaya, bawa pengguna kembali ke halaman senarai murid
-      window.location.href = "senarai_murid.html";
+      try {
+        // Kumpul semua data dari borang
+        const pendapatan = parseFloat(pendapatanInput.value) || 0;
+        const tanggungan = parseInt(tanggunganInput.value) || 1;
+        const perkapita = pendapatan / tanggungan;
+        
+        // Semak jika dokumen lengkap
+        const jumlahChecked = document.querySelectorAll(".doc-checkbox:checked").length;
+        const isDokumenLengkap = jumlahChecked === checkboxes.length;
+
+        // Sediakan objek data untuk dihantar ke Firestore
+        const dataMurid = {
+          nama: document.getElementById("nama-murid").value.toUpperCase(),
+          mykid: document.getElementById("no-mykid").value,
+          kelas: document.getElementById("kelas-id").value,
+          jantina: document.getElementById("jantina").value,
+          kesihatan: document.getElementById("alahan").value || "Tiada",
+          waris: document.getElementById("nama-penjaga").value.toUpperCase(),
+          telWaris: document.getElementById("no-telefon").value,
+          waris2: "", // Boleh ditambah kemudian jika ada
+          telWaris2: document.getElementById("no-telefon-kecemasan").value || "",
+          alamat: document.getElementById("alamat-lengkap").value,
+          pendapatan: pendapatan,
+          tanggungan: tanggungan,
+          perkapita: perkapita,
+          dokumenLengkap: isDokumenLengkap,
+          tarikhDaftar: new Date().toISOString()
+        };
+
+        // Simpan ke collection 'murid' di Firestore
+        await addDoc(collection(db, "murid"), dataMurid);
+
+        alert(`Rekod untuk profil murid:\n${dataMurid.nama}\nTelah BERJAYA disimpan ke pangkalan data!`);
+        window.location.href = "senarai_murid.html";
+
+      } catch (error) {
+        console.error("Ralat menyimpan data: ", error);
+        alert("Gagal menyimpan data ke pangkalan data. Sila semak sambungan internet atau tetapan Firebase Rules anda.");
+      } finally {
+        // Kembalikan butang kepada keadaan asal jika gagal
+        btnSimpan.innerHTML = teksAsalBtn;
+        btnSimpan.disabled = false;
+      }
     });
   }
 });

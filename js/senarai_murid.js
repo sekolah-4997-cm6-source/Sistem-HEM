@@ -1,5 +1,5 @@
 // js/senarai_murid.js
-import { db } from "./firebase_config.js";
+import { db } from "./firebase-config.js";
 import { collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {

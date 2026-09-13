@@ -88,37 +88,11 @@
           </thead>
           <tbody id="jadual-murid-body" class="divide-y divide-slate-200 text-slate-700">
             <!-- Data dinamik akan diisi oleh senarai_murid.js -->
-            <!-- Contoh Baris Dummy untuk Pratonton visual UI -->
-            <tr class="hover:bg-slate-50 transition">
-              <td class="p-3 font-semibold">1</td>
-              <td class="p-3">
-                <div class="font-bold text-slate-800">AHMAD BIN ABU</div>
-                <div class="text-[10px] text-slate-400">120304021234</div>
-              </td>
-              <td class="p-3"><span class="bg-slate-100 text-slate-700 font-bold px-2 py-1 rounded">6 Alpha</span></td>
-              <td class="p-3">
-                <div class="font-semibold">ABU BIN HASSAN</div>
-                <div class="flex items-center space-x-2 mt-1">
-                  <a href="tel:0123456789" class="text-emerald-600 hover:text-emerald-700 font-bold text-[10px] flex items-center space-x-1">
-                    <i class="fa-solid fa-phone"></i> <span>012-3456789</span>
-                  </a>
-                </div>
-              </td>
-              <td class="p-3">
-                <div class="font-bold text-emerald-600">RM 250.00</div>
-                <span class="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">Layak RMT</span>
-              </td>
-              <td class="p-3">
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700">🟢 Lengkap</span>
-              </td>
-              <td class="p-3 text-center space-x-1">
-                <button onclick="bukaKadCemas('AHMAD BIN ABU', '6 Alpha', 'ABU BIN HASSAN', '0123456789', 'SITI BINTI ALI', '0198765432', 'RM 250.00', 'Asma ringan', 'No. 12, FELDA Laka Selatan')" 
-                  class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-[10px] font-semibold transition" title="Carian Kecemasan Waris">
-                  🚨 Cemas
-                </button>
-                <a href="profil_murid.html?id=1" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[10px] font-semibold transition">
-                  <i class="fa-solid fa-pen-to-square"></i> Edit
-                </a>
+            
+            <!-- Paparan sementara (Loading) sebelum data Firestore siap ditarik -->
+            <tr>
+              <td colspan="7" class="p-6 text-center text-slate-500 text-xs font-semibold">
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i> Sedang memuatkan data murid...
               </td>
             </tr>
           </tbody>

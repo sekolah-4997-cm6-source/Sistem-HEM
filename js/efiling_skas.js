@@ -3,7 +3,7 @@ import { db } from "./firebase-config.js";
 import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Masukkan Web App URL dari Google Apps Script anda di sini
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxA5jjmir-WVsTEcZvZERMQJ8SmfhLHLYREUJuvbpm7qAFC9G1QmfmVV_WdoA8MEkN6QA/exec";
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzYDt-e3ndIqCNGewL-XKq49JamZZoQAAivcYkyzjNqakHJHmm9o_P4uP_hjte1tloQAg/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   const folderCards = document.querySelectorAll(".folder-card");

@@ -1,4 +1,6 @@
 // js/laporan_bantuan.js
+import { db } from "./firebase-config.js";
+import { collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const jadualLaporanBody = document.getElementById("jadual-laporan-body");
@@ -10,32 +12,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const statDocPending = document.getElementById("stat-doc-pending");
   const btnExportCsv = document.getElementById("btn-export-csv");
 
-  // --- Contoh Data (Dummy Data) ---
-  // Di dunia sebenar, data ini ditarik dari pangkalan data (contoh: Firebase)
-  const senaraiMurid = [
-    {
-      id: 1, nama: "AHMAD BIN ABU", mykid: "140304021234", kelas: "6A",
-      waris: "ABU BIN HASSAN", pendapatan: 1000.00, tanggungan: 4, perkapita: 250.00, dokumenLengkap: true
-    },
-    {
-      id: 2, nama: "NURUL AMINA BINTI KASSIM", mykid: "160506029988", kelas: "4A",
-      waris: "KASSIM BIN SELAMAT", pendapatan: 3400.00, tanggungan: 4, perkapita: 850.00, dokumenLengkap: false
-    },
-    {
-      id: 3, nama: "CHONG WEI MING", mykid: "170101027777", kelas: "3A",
-      waris: "CHONG KIN KEE", pendapatan: 1500.00, tanggungan: 5, perkapita: 300.00, dokumenLengkap: true
-    },
-    {
-      id: 4, nama: "SITI NURHALIZA BINTI AWANG", mykid: "150909028888", kelas: "5A",
-      waris: "AWANG BIN SULONG", pendapatan: 900.00, tanggungan: 3, perkapita: 300.00, dokumenLengkap: false
-    },
-    {
-      id: 5, nama: "MUTHU A/L RAMASAMY", mykid: "180202026666", kelas: "2A",
-      waris: "RAMASAMY A/L VEERAN", pendapatan: 2000.00, tanggungan: 4, perkapita: 500.00, dokumenLengkap: true
-    }
-  ];
-
+  let senaraiMurid = [];
   let dataTapisSemasa = [];
+
+  // ==========================================
+  // FUNGSI 0: TARIK DATA DARI FIREBASE (REAL-TIME)
+  // ==========================================
+  const q = query(collection(db, "murid"), orderBy("nama", "asc"));
+  
+  onSnapshot(q, (snapshot) => {
+    senaraiMurid = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        nama: data.nama || "TIADA NAMA",
+        mykid: data.mykid || "-",
+        kelas: data.kelas || "-",
+        waris: data.waris || "-",
+        pendapatan: parseFloat(data.pendapatan) || 0,
+        tanggungan: parseInt(data.tanggungan) || 1,
+        perkapita: parseFloat(data.perkapita) || 0,
+        dokumenLengkap: data.dokumenLengkap === true
+      };
+    });
+    
+    // Render laporan secara automatik selepas data siap ditarik
+    filterLaporan(); 
+  }, (error) => {
+    console.error("Ralat memuatkan data laporan:", error);
+    jadualLaporanBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-red-500 font-bold text-xs">Ralat sambungan ke pangkalan data.</td></tr>`;
+  });
 
   // ==========================================
   // FUNGSI 1: RENDER JADUAL & KIRA STATISTIK
@@ -46,13 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Pembolehubah untuk statistik
     let jumlahRMT = 0;
-    let jumlahBAP = data.length; // Andaian semua murid dalam senarai layak BAP asas
+    let jumlahBAP = data.length; // Andaian semua murid tersenarai layak BAP asas
     let jumlahDocPending = 0;
 
     if (data.length === 0) {
       jadualLaporanBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500 text-xs">Tiada rekod padanan dijumpai.</td></tr>`;
     } else {
       data.forEach((murid, index) => {
+        // Logik Kelayakan: Perkapita RM310 ke bawah layak RMT
         const isRMT = murid.perkapita <= 310;
         
         // Kemaskini statistik
@@ -69,9 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <td class="p-3 font-semibold">${index + 1}</td>
           <td class="p-3 font-bold text-slate-800 uppercase">${murid.nama}</td>
           <td class="p-3">${murid.mykid}</td>
-          <td class="p-3">${murid.kelas}</td>
-          <td class="p-3 uppercase">${murid.waris}</td>
-          <td class="p-3">RM ${murid.pendapatan.toFixed(2)}</td>
+          <td class="p-3 text-center"><span class="bg-slate-100 border border-slate-200 text-slate-700 font-bold px-2 py-1 rounded text-[10px]">${murid.kelas}</span></td>
+          <td class="p-3 uppercase text-[10px] sm:text-xs">${murid.waris}</td>
+          <td class="p-3 text-slate-600">RM ${murid.pendapatan.toFixed(2)}</td>
           <td class="p-3 font-bold ${isRMT ? 'text-emerald-600' : 'text-slate-700'}">RM ${murid.perkapita.toFixed(2)}</td>
           <td class="p-3">${statusRMTBadge}</td>
         `;
@@ -98,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (jenisBantuan === "RMT") {
         matchBantuan = m.perkapita <= 310;
       }
-      // BAP atau SEMUA memaparkan semua rekod asas
+      // BAP atau SEMUA memaparkan semua rekod (kerana BAP kini terbuka)
 
       // Tapis Kelas
       const matchKelas = kelas === "" || m.kelas === kelas;
@@ -109,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderJadualLaporan(filtered);
   }
 
-  // Pasang Event Listener
+  // Pasang Event Listener untuk Penapis
   tapisJenisBantuan.addEventListener("change", filterLaporan);
   tapisKelasLaporan.addEventListener("change", filterLaporan);
 
@@ -123,12 +130,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Tajuk Kolum CSV
-    let csvContent = "Bil,Nama Murid,No. MyKid,Kelas,Nama Penjaga,Pendapatan (RM),Tanggungan,Perkapita (RM),Status RMT\n";
+    let csvContent = "Bil,Nama Murid,No. MyKid,Kelas,Nama Penjaga,Pendapatan (RM),Tanggungan,Perkapita (RM),Status RMT,Dokumen Lengkap\n";
 
     // Isi Data
     dataTapisSemasa.forEach((m, index) => {
       const isRMT = m.perkapita <= 310 ? "Layak" : "Tidak Layak";
-      // Gunakan " (quotes) untuk mengelakkan masalah jika ada koma (,) dalam nama
+      const statusDokumen = m.dokumenLengkap ? "Ya" : "Tidak";
+      
+      // Gunakan " (quotes) untuk mengelakkan masalah fail rosak jika ada koma (,) dalam nama
       const baris = [
         index + 1,
         `"${m.nama}"`,
@@ -138,7 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
         m.pendapatan.toFixed(2),
         m.tanggungan,
         m.perkapita.toFixed(2),
-        isRMT
+        isRMT,
+        statusDokumen
       ];
       csvContent += baris.join(",") + "\n";
     });
@@ -153,10 +163,4 @@ document.addEventListener("DOMContentLoaded", () => {
     link.click();
     document.body.removeChild(link);
   });
-
-  // ==========================================
-  // INITIALIZATION
-  // ==========================================
-  // Papar semua murid yang layak RMT sebagai paparan (default) mula
-  filterLaporan();
 });

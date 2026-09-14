@@ -139,7 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({
             base64: base64Data,
             mimeType: file.type,
-            fileName: `${Date.now()}_${file.name}`
+            fileName: `${Date.now()}_${file.name}`,
+            kategoriFolder: std // <-- PEMECAHAN FAIL STANDARD 1,2,3,4
           })
         });
 

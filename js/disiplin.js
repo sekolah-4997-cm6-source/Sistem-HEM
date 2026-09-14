@@ -161,12 +161,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         await addDoc(collection(db, "disiplin"), {
-          muridId: muridId, // Simpan ID Profil Murid
-          muridNama: muridNama, // Simpan Nama untuk paparan pantas
+          muridId: muridId,
+          muridNama: muridNama,
           tarikh: tarikh,
           kategori: kategori,
           keterangan: keterangan,
-          status: "Selesai",
+          status: "Selesai", // Boleh ditukar secara dinamik kelak jika perlukan status Belum Selesai
           timestamp: new Date().toISOString()
         });
 
@@ -179,6 +179,39 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fa-solid fa-plus mr-1"></i> Simpan Rekod';
+      }
+    });
+  }
+
+  // ==========================================
+  // FUNGSI 4: TRACKER KES KRITIKAL (REAL-TIME)
+  // ==========================================
+  function langganStatistikKritikal() {
+    const qSemuaDisiplin = collection(db, "disiplin");
+    
+    onSnapshot(qSemuaDisiplin, (snapshot) => {
+      let jumlahKritikalBelumSelesai = 0;
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        
+        // Mengikut logik di Fungsi 3, salah laku berat disimpan sebagai "BERAT"
+        if (data.kategori === "BERAT" && data.status === "Belum Selesai") {
+          jumlahKritikalBelumSelesai++;
+        }
+      });
+
+      const badgeKritikal = document.getElementById("tracker-kes-kritikal");
+      
+      if (badgeKritikal) {
+        if (jumlahKritikalBelumSelesai > 0) {
+          badgeKritikal.textContent = `${jumlahKritikalBelumSelesai} Kes Kritikal Belum Selesai`;
+          badgeKritikal.style.display = "inline-block"; 
+          badgeKritikal.className = "bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded-full";
+        } else {
+          badgeKritikal.textContent = `0 Kes Kritikal Belum Selesai`;
+          badgeKritikal.className = "bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-1 rounded-full";
+        }
       }
     });
   }
@@ -206,6 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // INITIALIZATION
   // ==========================================
-  tarikDataMurid(); // Ambil senarai murid untuk dropdown carian
-  langganRekodDisiplin(); // Papar rekod disiplin sedia ada
+  tarikDataMurid(); 
+  langganRekodDisiplin(); 
+  langganStatistikKritikal(); // Mula langgan statistik kritikal
 });

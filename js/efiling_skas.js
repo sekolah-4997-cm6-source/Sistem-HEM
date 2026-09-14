@@ -26,6 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
     "S4": "Standard 4 (PdPC Guru)"
   };
 
+  // 1. Tetapan Sasaran Tracker (Ubah nilai sasaran dokumen ikut sekolah anda)
+  const sasaranDokumen = {
+    "S1": 10, 
+    "S2": 15,
+    "S3": 20,
+    "S4": 12
+  };
+
   // Helper: Tukar Fail ke Base64
   const fileToBase64 = file => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -34,6 +42,56 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.onerror = error => reject(error);
   });
 
+  // ==========================================
+  // FUNGSI A: TRACKER DOKUMEN REAL-TIME
+  // ==========================================
+  function langganStatistikFolders() {
+    const qSemua = collection(db, "efiling");
+    
+    onSnapshot(qSemua, (snapshot) => {
+      const kiraan = { "S1": 0, "S2": 0, "S3": 0, "S4": 0 };
+
+      // Kira jumlah dokumen
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (kiraan[data.standard] !== undefined) {
+          kiraan[data.standard]++;
+        }
+      });
+
+      // Update UI untuk setiap kad
+      folderCards.forEach(card => {
+        const std = card.getAttribute("data-standard");
+        const jumlahSediaAda = kiraan[std];
+        const sasaran = sasaranDokumen[std];
+        
+        let peratus = Math.round((jumlahSediaAda / sasaran) * 100);
+        if (peratus > 100) peratus = 100; 
+
+        const textKiraan = card.querySelector(".tracker-kiraan");
+        const textPeratus = card.querySelector(".tracker-peratus");
+
+        if (textKiraan) textKiraan.textContent = `${jumlahSediaAda} Dokumen`;
+
+        if (textPeratus) {
+          textPeratus.textContent = `${peratus}% Lengkap`;
+          textPeratus.className = "tracker-peratus font-bold"; // Reset kelas warna
+
+          if (peratus >= 80) {
+            textPeratus.classList.add("text-emerald-600");
+          } else if (peratus >= 50) {
+            textPeratus.classList.add("text-amber-500");
+          } else {
+            textPeratus.classList.add("text-red-500");
+          }
+        }
+      });
+    });
+  }
+
+  // ==========================================
+  // FUNGSI B: PAPARAN JADUAL MENGIKUT STANDARD
+  // ==========================================
   function langganFail(standard) {
     const q = query(collection(db, "efiling"), where("standard", "==", standard));
     onSnapshot(q, (snapshot) => {
@@ -44,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderJadualFail() {
     jadualFailBody.innerHTML = "";
-    const keyword = searchFail.value.toLowerCase();
+    const keyword = searchFail ? searchFail.value.toLowerCase() : "";
     const failTapis = senaraiFail.filter(f => f.nama.toLowerCase().includes(keyword));
 
     if (failTapis.length === 0) {
@@ -75,18 +133,21 @@ document.addEventListener("DOMContentLoaded", () => {
       jadualFailBody.appendChild(tr);
     });
 
+    // Padam Rekod
     document.querySelectorAll(".btn-padam-fail").forEach(btn => {
       btn.addEventListener("click", async () => {
         const docId = btn.getAttribute("data-id");
-        if (confirm("Adakah anda pasti mahu memadam rekod fail ini dari senarai?")) {
+        if (confirm("Adakah anda pasti mahu memadam rekod fail ini dari sistem?")) {
           await deleteDoc(doc(db, "efiling", docId));
-          alert("Rekod berjaya dipadam!");
+          // Nota: Ia padam dari Firestore sahaja. Dari Google Drive perlu manual.
         }
       });
     });
   }
   
-  // 1. Pilihan folder
+  // ==========================================
+  // FUNGSI C: INTERAKSI UI (KLIK FOLDER, MODAL)
+  // ==========================================
   if (folderCards.length > 0) {
     folderCards.forEach(card => {
       card.addEventListener("click", () => {
@@ -104,19 +165,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 2. Pembaikan Modal Muat Naik (Null check supaya tak crash jika tiada butang)
   if (btnMuatNaik && modalUpload) {
     btnMuatNaik.addEventListener("click", () => modalUpload.classList.remove("hidden"));
   }
 
   if (btnTutupUpload && modalUpload) {
     btnTutupUpload.addEventListener("click", (e) => {
-      e.preventDefault(); // Elak page refresh
+      e.preventDefault();
       modalUpload.classList.add("hidden");
     });
   }
 
-  // 3. Proses Hantar ke Google Drive (via GAS) dibalut dengan pelindung if(formUpload)
+  // ==========================================
+  // FUNGSI D: HANTAR KE GOOGLE DRIVE (GAS) & FIRESTORE
+  // ==========================================
   if (formUpload) {
     formUpload.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -129,24 +191,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const btnSubmit = formUpload.querySelector("button[type='submit']");
       btnSubmit.disabled = true;
-      btnSubmit.textContent = "Memuat naik ke Google Drive...";
+      btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat naik...';
 
       try {
         const base64Data = await fileToBase64(file);
 
+        // Tembak Data ke Google Apps Script
         const response = await fetch(GAS_WEB_APP_URL, {
           method: "POST",
           body: JSON.stringify({
             base64: base64Data,
             mimeType: file.type,
             fileName: `${Date.now()}_${file.name}`,
-            kategoriFolder: std // <-- PEMECAHAN FAIL STANDARD 1,2,3,4
+            kategoriFolder: std // <-- Hantar Kategori Standard untuk buat folder
           })
         });
 
         const result = await response.json();
 
         if (result.status === "success") {
+          // Jika Drive berjaya, simpan ke Firestore
           await addDoc(collection(db, "efiling"), {
             nama: nama,
             standard: std,
@@ -167,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Gagal memuat naik fail ke Google Drive. Sila semak sambungan/GAS URL.");
       } finally {
         btnSubmit.disabled = false;
-        btnSubmit.textContent = "Simpan ke e-Filing";
+        btnSubmit.innerHTML = 'Simpan ke e-Filing';
       }
     });
   }
@@ -176,5 +240,9 @@ document.addEventListener("DOMContentLoaded", () => {
     searchFail.addEventListener("input", renderJadualFail);
   }
   
-  langganFail(standardAktif);
+  // ==========================================
+  // INITIALIZATION
+  // ==========================================
+  langganStatistikFolders(); // 1. Mulakan tracker folder
+  langganFail(standardAktif); // 2. Papar fail untuk folder pertama (S1)
 });

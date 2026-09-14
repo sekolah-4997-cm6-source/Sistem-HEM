@@ -1,6 +1,6 @@
 // js/senarai_murid.js
 import { db } from "./firebase-config.js";
-import { collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("jadual-murid-body");
@@ -24,6 +24,25 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Ralat memuatkan data murid:", error);
     tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-red-500 text-xs">Ralat memuatkan data dari pangkalan data.</td></tr>`;
   });
+
+  // ==========================================
+  // FUNGSI MEMADAM REKOD (Global Function)
+  // ==========================================
+  window.padamMurid = async (id, nama) => {
+    // Paparkan pop-up pengesahan (Confirmation dialog)
+    const sah = confirm(`⚠️ PENGESAHAN PADAM REKOD\n\nAdakah anda pasti mahu memadam profil:\n"${nama}"?\n\nTindakan ini tidak boleh diundurkan.`);
+    
+    if (sah) {
+      try {
+        // Proses memadam dari Firestore
+        await deleteDoc(doc(db, "murid", id));
+        alert(`Rekod ${nama} telah BERJAYA dipadam dari sistem.`);
+      } catch (error) {
+        console.error("Ralat memadam data:", error);
+        alert("Gagal memadam rekod. Sila semak sambungan internet anda.");
+      }
+    }
+  };
 
   function renderTable(data) {
     tbody.innerHTML = "";
@@ -68,14 +87,20 @@ document.addEventListener("DOMContentLoaded", () => {
           ${perkapitaLabel}
         </td>
         <td class="p-3">${dokumenBadge}</td>
-        <td class="p-3 text-center space-x-1">
+        <td class="p-3 text-center space-x-1 flex justify-center items-center">
           <button onclick="bukaKadCemas('${murid.nama}', '${murid.kelas}', '${murid.waris}', '${murid.telWaris}', '${murid.waris2 || ''}', '${murid.telWaris2 || ''}', 'RM ${(murid.perkapita || 0).toFixed(2)}', '${murid.kesihatan || 'Tiada'}', '${murid.alamat || ''}')" 
             class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1.5 rounded text-[10px] font-semibold transition" title="Carian Kecemasan Waris">
             🚨 Cemas
           </button>
-          <a href="profil_murid.html?id=${murid.id}" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1.5 rounded text-[10px] font-semibold transition inline-block">
+          
+          <a href="profil_murid.html?id=${murid.id}" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1.5 rounded text-[10px] font-semibold transition inline-block" title="Edit Profil">
             <i class="fa-solid fa-pen-to-square"></i>
           </a>
+
+          <!-- Butang Padam Baharu -->
+          <button onclick="padamMurid('${murid.id}', '${murid.nama}')" class="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1.5 rounded text-[10px] font-semibold transition inline-block" title="Padam Rekod">
+            <i class="fa-solid fa-trash"></i>
+          </button>
         </td>
       `;
       tbody.appendChild(tr);

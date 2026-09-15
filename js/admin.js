@@ -1,17 +1,17 @@
 // js/admin.js
 
 import { db } from "./firebase-config.js";
-// Tambah limit, orderBy dan doc dalam import
 import { collection, getDocs, onSnapshot, query, where, limit, orderBy, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let enrolmenChartInstance = null; 
+let kehadiranChartInstance = null; // Tambah instance untuk graf kehadiran
 
 document.addEventListener("DOMContentLoaded", () => {
   initGlobalSearch(); 
-  initStaticCharts(); 
+  muatDataKehadiranLive(); // Menggantikan initStaticCharts()
   muatDataDashboard(); 
-  muatDataTakwim();    // Fungsi baharu
-  muatDataSKPMg2();    // Fungsi baharu
+  muatDataTakwim();    
+  muatDataSKPMg2();    
 });
 
 // ==========================================
@@ -62,7 +62,6 @@ async function muatDataDashboard() {
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            // Hanya ambil 1 kes berat pertama sebagai highlight
             if (data.kategori === "BERAT" && !adaKritikal) {
                 alertHTML += `
                   <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-red-200">
@@ -72,7 +71,6 @@ async function muatDataDashboard() {
                 `;
                 adaKritikal = true;
             }
-            // Hanya ambil 1 kes ponteng pertama sebagai highlight
             if (data.kategori === "PONTENG" && !adaPonteng) {
                 alertHTML += `
                   <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-amber-200">
@@ -84,7 +82,6 @@ async function muatDataDashboard() {
             }
         });
 
-        // Paparan jika tiada kes aktif
         if (alertHTML === "") {
             alertContainer.innerHTML = `<div class="col-span-1 md:col-span-2 text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 text-center font-semibold">✅ Tiada kes disiplin atau amaran ponteng aktif buat masa ini.</div>`;
         } else {
@@ -102,7 +99,6 @@ async function muatDataDashboard() {
 // 2. FUNGSI TAKWIM & e-FILING SKPMg2
 // ==========================================
 function muatDataTakwim() {
-  // Andaikan ada collection "takwim", susun ikut tarikh terdekat
   const qTakwim = query(collection(db, "takwim"), orderBy("tarikh", "asc"), limit(4));
   onSnapshot(qTakwim, (snapshot) => {
     const container = document.getElementById("takwim-list-container");
@@ -117,9 +113,8 @@ function muatDataTakwim() {
 
     snapshot.forEach(doc => {
         const data = doc.data();
-        let formattedDate = data.tarikh; // Fallback text
+        let formattedDate = data.tarikh; 
         
-        // Cuba format tarikh jadi lebih kemas (cth: 12 Sept)
         try {
             const d = new Date(data.tarikh);
             if(!isNaN(d)) formattedDate = d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' });
@@ -136,7 +131,6 @@ function muatDataTakwim() {
 }
 
 function muatDataSKPMg2() {
-  // Andaikan kita simpan tetapan ini dalam collection "tetapan", document "skpmg2"
   const docRef = doc(db, "tetapan", "skpmg2");
   onSnapshot(docRef, (docSnap) => {
     if(docSnap.exists()) {
@@ -145,7 +139,6 @@ function muatDataSKPMg2() {
       setPeratusColor("skpmg-disiplin", data.disiplin || 0);
       setPeratusColor("skpmg-bantuan", data.bantuan || 0);
     } else {
-      // Data dummy jika document tak wujud lagi di Firestore
       setPeratusColor("skpmg-ketetapan", 85);
       setPeratusColor("skpmg-disiplin", 90);
       setPeratusColor("skpmg-bantuan", 60);
@@ -160,7 +153,6 @@ function setPeratusColor(elementId, nilai) {
   el.innerText = `${nilai}%`;
   el.className = "font-bold";
   
-  // Logik warna: Hijau (>=85%), Kuning (>=60%), Merah (<60%)
   if (nilai >= 85) {
     el.classList.add("text-emerald-600");
   } else if (nilai >= 60) {
@@ -171,7 +163,7 @@ function setPeratusColor(elementId, nilai) {
 }
 
 // ==========================================
-// 3. FUNGSI GRAF & CARIAN (Sedia ada, tiada perubahan)
+// 3. FUNGSI GRAF & CARIAN 
 // ==========================================
 function renderEnrolmenChart(lelaki, perempuan) {
   const ctxEnrolmen = document.getElementById("enrolmenChart");
@@ -195,30 +187,103 @@ function renderEnrolmenChart(lelaki, perempuan) {
   });
 }
 
-function initStaticCharts() {
-  const ctxKehadiran = document.getElementById("kehadiranChart");
-  if (ctxKehadiran) {
-    new Chart(ctxKehadiran, {
-      type: "bar",
-      data: {
-        labels: ["Ogos", "Sept"],
-        datasets: [{
-          label: "Peratus Kehadiran (%)",
-          data: [95.2, 96.2],
-          backgroundColor: ["#3b82f6", "#10b981"],
-          borderRadius: 6
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: { y: { beginAtZero: false, min: 60, max: 100 } }
+// Fungsi baharu untuk menarik data kehadiran dari Firestore
+async function muatDataKehadiranLive() {
+  try {
+    const qKehadiran = query(collection(db, "kehadiran"), orderBy("tarikh", "desc"), limit(5));
+    const snapshot = await getDocs(qKehadiran);
+
+    let labelsTarikh = [];
+    let dataPeratus = [];
+    let peratusHariIni = 0;
+
+    if (!snapshot.empty) {
+      const rekodSementara = [];
+      
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        let peratus = 0;
+        
+        if (data.jumlahMurid > 0) {
+          peratus = ((data.jumlahHadir / data.jumlahMurid) * 100).toFixed(1);
+        }
+        
+        rekodSementara.push({
+          tarikh: data.tarikh || doc.id,
+          peratus: parseFloat(peratus)
+        });
+      });
+
+      rekodSementara.reverse();
+
+      rekodSementara.forEach(r => {
+        const d = new Date(r.tarikh);
+        const labelText = isNaN(d) ? r.tarikh : d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' });
+        
+        labelsTarikh.push(labelText);
+        dataPeratus.push(r.peratus);
+      });
+
+      peratusHariIni = rekodSementara[rekodSementara.length - 1].peratus;
+    } else {
+      labelsTarikh = ["Tiada Data"];
+      dataPeratus = [0];
+    }
+
+    const kpiKehadiranEl = document.getElementById("kpi-kehadiran");
+    if (kpiKehadiranEl) {
+      kpiKehadiranEl.innerText = `${peratusHariIni}%`;
+      
+      if (peratusHariIni >= 90) {
+        kpiKehadiranEl.className = "text-2xl font-bold text-emerald-600 mt-1";
+      } else if (peratusHariIni >= 80) {
+        kpiKehadiranEl.className = "text-2xl font-bold text-amber-500 mt-1";
+      } else {
+        kpiKehadiranEl.className = "text-2xl font-bold text-red-600 mt-1";
       }
-    });
+    }
+
+    renderKehadiranChart(labelsTarikh, dataPeratus);
+
+  } catch (error) {
+    console.error("Ralat menarik data kehadiran live:", error);
   }
 }
 
+// Fungsi baharu untuk memaparkan graf kehadiran Chart.js
+function renderKehadiranChart(labels, data) {
+  const ctx = document.getElementById("kehadiranChart");
+  if (!ctx) return;
+  if (kehadiranChartInstance) kehadiranChartInstance.destroy();
+
+  kehadiranChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Peratus Kehadiran (%)",
+        data: data,
+        backgroundColor: "#3b82f6",
+        borderRadius: 4,
+        barThickness: 30
+      }]
+    },
+    options: {
+      responsive: true, 
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { 
+        y: { 
+          beginAtZero: false, 
+          min: 50, 
+          max: 100 
+        } 
+      }
+    }
+  });
+}
+
 async function initGlobalSearch() {
-  // .. (Kod carian global dibiarkan sama seperti sebelum ini) ..
   const searchInput = document.getElementById("quick-search-input");
   if (!searchInput) return;
 

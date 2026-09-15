@@ -208,3 +208,126 @@ function kemaskiniKiraanSemasa() {
   document.getElementById('kiraan-hadir').innerText = `Hadir: ${hadir}`;
   document.getElementById('kiraan-tak-hadir').innerText = `Tidak Hadir: ${takHadir}`;
 }
+
+
+// ==========================================
+// 6. FUNGSI SIMPAN KEHADIRAN KE FIRESTORE
+// ==========================================
+
+// Pasang Event Listener pada butang "Simpan Rekod"
+document.addEventListener("DOMContentLoaded", () => {
+  const btnSimpan = document.getElementById("btn-simpan-kehadiran");
+  if(btnSimpan) {
+    btnSimpan.addEventListener("click", simpanKehadiran);
+  }
+});
+
+async function simpanKehadiran() {
+  const btnSimpan = document.getElementById("btn-simpan-kehadiran");
+  const teksAsalButang = btnSimpan.innerHTML;
+  
+  // Tukar butang ke status 'loading'
+  btnSimpan.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...`;
+  btnSimpan.disabled = true;
+
+  try {
+    const checkboxes = document.querySelectorAll('.checkbox-hadir');
+    let senaraiRekodMurid = [];
+    let jumlahHadir = 0;
+    let jumlahTidakHadir = 0;
+
+    // 1. Kumpul data dari setiap baris murid
+    checkboxes.forEach(cb => {
+      const idMurid = cb.getAttribute('data-id');
+      // Cari nama dari array dataMuridSemasa
+      const muridData = dataMuridSemasa.find(m => m.id === idMurid); 
+      const isHadir = cb.checked;
+      let sebabText = "";
+
+      if (isHadir) {
+        jumlahHadir++;
+      } else {
+        jumlahTidakHadir++;
+        sebabText = document.getElementById(`sebab-${idMurid}`).value;
+      }
+
+      senaraiRekodMurid.push({
+        idMurid: idMurid,
+        nama: muridData ? muridData.nama : "Tidak Diketahui",
+        hadir: isHadir,
+        sebab: sebabText
+      });
+    });
+
+    // Semak jika kelas tiada murid
+    if (senaraiRekodMurid.length === 0) {
+      alert("Tiada data murid untuk disimpan.");
+      btnSimpan.innerHTML = teksAsalButang;
+      btnSimpan.disabled = false;
+      return;
+    }
+
+    // 2. Format ID Dokumen: Cth "2026-09-15_1-Bestari"
+    const kelasID = currentKelasPenuh.replace(" ", "-"); 
+    const docID = `${tarikhID}_${kelasID}`;
+
+    // 3. Data untuk dihantar ke koleksi 'kehadiran_harian'
+    const dataHarian = {
+      tarikh: tarikhID,
+      namaKelas: currentKelasPenuh,
+      statusSelesai: true,
+      jumlahHadir: jumlahHadir,
+      jumlahTidakHadir: jumlahTidakHadir,
+      jumlahMurid: jumlahHadir + jumlahTidakHadir,
+      senaraiMurid: senaraiRekodMurid,
+      timestamp: new Date()
+    };
+
+    // 4. Hantar data ke Firestore (Set/Update)
+    await setDoc(doc(db, "kehadiran_harian", docID), dataHarian);
+
+    // (Pilihan) Nanti di sini kita akan tambah kod untuk kemaskini 
+    // profil YTD setiap murid, tetapi mari fokus harian dahulu.
+
+    // 5. Kemaskini UI (Tutup modal & tukar Lencana Kelas)
+    document.getElementById("modal-kehadiran").classList.add("hidden");
+    alert(`Rekod kehadiran ${currentKelasPenuh} berjaya disimpan!`);
+    
+    // Kira Peratusan Hadir
+    const peratus = Math.round((jumlahHadir / (jumlahHadir + jumlahTidakHadir)) * 100);
+    kemaskiniLencanaKelas(currentKelasPenuh, peratus);
+
+  } catch (error) {
+    console.error("Ralat menyimpan kehadiran:", error);
+    alert("Berlaku ralat semasa menyimpan rekod. Sila cuba lagi.");
+  } finally {
+    // Kembalikan butang ke keadaan asal
+    btnSimpan.innerHTML = teksAsalButang;
+    btnSimpan.disabled = false;
+  }
+}
+
+// ==========================================
+// 7. KEMASKINI LENCANA KELAS DI DASHBOARD
+// ==========================================
+function kemaskiniLencanaKelas(namaPenuh, peratus) {
+  // namaPenuh contoh: "1 Bestari". Kita pecahkan kepada tahun dan nama
+  const [tahun, nama] = namaPenuh.split(" ");
+  const badgeId = `badge-${tahun}-${nama}`;
+  const badge = document.getElementById(badgeId);
+  
+  if(badge) {
+    badge.innerText = `Selesai (${peratus}%)`;
+    // Buang warna kelabu
+    badge.classList.remove("bg-slate-100", "text-slate-500", "border-slate-200");
+    
+    // Letak warna ikut peratusan
+    if(peratus >= 90) {
+      badge.classList.add("bg-emerald-100", "text-emerald-700", "border-emerald-300"); // Hijau
+    } else if (peratus >= 80) {
+      badge.classList.add("bg-amber-100", "text-amber-700", "border-amber-300"); // Kuning
+    } else {
+      badge.classList.add("bg-red-100", "text-red-700", "border-red-300"); // Merah
+    }
+  }
+}

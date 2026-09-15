@@ -1,7 +1,7 @@
 // js/admin.js
 
 import { db } from "./firebase-config.js";
-import { collection, getDocs, onSnapshot, query, where, limit, orderBy, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, onSnapshot, query, where, limit, orderBy, doc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let enrolmenChartInstance = null; 
 let kehadiranChartInstance = null; // Tambah instance untuk graf kehadiran
@@ -11,7 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
   muatDataKehadiranLive(); // Menggantikan initStaticCharts()
   muatDataDashboard(); 
   muatDataTakwim();    
-  muatDataSKPMg2();    
+  muatDataSKPMg2();
+  initTakwimModal();
 });
 
 // ==========================================
@@ -374,4 +375,64 @@ async function initGlobalSearch() {
   document.addEventListener("click", (e) => {
     if (!searchWrapper.contains(e.target)) resultsContainer.classList.add("hidden");
   });
+}
+
+// ==========================================
+// 4. FUNGSI MODAL TAMBAH TAKWIM
+// ==========================================
+function initTakwimModal() {
+  const btnTambah = document.getElementById("btn-tambah-takwim");
+  const btnTutup = document.getElementById("btn-tutup-takwim");
+  const modalTakwim = document.getElementById("modal-takwim");
+  const formTakwim = document.getElementById("form-tambah-takwim");
+
+  // Buka Modal
+  if (btnTambah && modalTakwim) {
+    btnTambah.addEventListener("click", () => {
+      modalTakwim.classList.remove("hidden");
+    });
+  }
+
+  // Tutup Modal
+  if (btnTutup && modalTakwim) {
+    btnTutup.addEventListener("click", (e) => {
+      e.preventDefault();
+      modalTakwim.classList.add("hidden");
+    });
+  }
+
+  // Hantar Borang ke Firestore
+  if (formTakwim) {
+    formTakwim.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const tarikh = document.getElementById("takwim-tarikh").value;
+      const program = document.getElementById("takwim-program").value;
+      const btnSubmit = formTakwim.querySelector("button[type='submit']");
+      
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Menyimpan...';
+
+      try {
+        await addDoc(collection(db, "takwim"), {
+          tarikh: tarikh,
+          program: program,
+          // Menyimpan timestamp supaya boleh disusun (orderBy) jika perlu pada masa depan
+          createdAt: new Date().toISOString() 
+        });
+        
+        formTakwim.reset();
+        modalTakwim.classList.add("hidden");
+        // Beri maklum balas berjaya (Optional: Boleh guna notifikasi yang lebih cantik selain alert)
+        alert("Program berjaya ditambahkan ke takwim!"); 
+        
+      } catch (error) {
+        console.error("Ralat menambah takwim:", error);
+        alert("Gagal menyimpan program. Sila cuba lagi.");
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = 'Simpan Program';
+      }
+    });
+  }
 }

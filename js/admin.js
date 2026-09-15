@@ -130,29 +130,38 @@ function muatDataTakwim() {
   });
 }
 
+// Pengiraan Jumlah Dokumen Dari efiling_skas
 function muatDataSKPMg2() {
-  const docRef = doc(db, "efiling_skas", "prestasi");
   
-  onSnapshot(docRef, (docSnap) => {
-    if(docSnap.exists()) {
-      const data = docSnap.data();
-      // Data sebenar dari Firestore memantau S1 hingga S4
-      setPeratusColor("skpmg-s1", data.s1 || 0);
-      setPeratusColor("skpmg-s2", data.s2 || 0);
-      setPeratusColor("skpmg-s3", data.s3 || 0);
-      setPeratusColor("skpmg-s4", data.s4 || 0);
-    } else {
-      // Jika belum ada data
-      setPeratusColor("skpmg-s1", 0);
-      setPeratusColor("skpmg-s2", 0);
-      setPeratusColor("skpmg-s3", 0);
-      setPeratusColor("skpmg-s4", 0);
-    }
+  const qSemua = collection(db, "efiling");
+  const sasaranDokumen = { "S1": 10, "S2": 15, "S3": 20, "S4": 12 };
+
+  onSnapshot(qSemua, (snapshot) => {
+    const kiraan = { "S1": 0, "S2": 0, "S3": 0, "S4": 0 };
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (kiraan[data.standard] !== undefined) {
+        kiraan[data.standard]++;
+      }
+    });
+
+    // Pengiraan Peratusan & Hadkan maksimum 100%
+    const p1 = Math.min(Math.round((kiraan["S1"] / sasaranDokumen["S1"]) * 100), 100);
+    const p2 = Math.min(Math.round((kiraan["S2"] / sasaranDokumen["S2"]) * 100), 100);
+    const p3 = Math.min(Math.round((kiraan["S3"] / sasaranDokumen["S3"]) * 100), 100);
+    const p4 = Math.min(Math.round((kiraan["S4"] / sasaranDokumen["S4"]) * 100), 100);
+
+    // Hantar ke UI Dashboard
+    setPeratusColor("skpmg-s1", p1);
+    setPeratusColor("skpmg-s2", p2);
+    setPeratusColor("skpmg-s3", p3);
+    setPeratusColor("skpmg-s4", p4);
+    
   }, (error) => {
-    console.error("Ralat menarik data e-Filing:", error);
+    console.error("Ralat menarik data e-Filing secara langsung:", error);
   });
 }
-
 function setPeratusColor(elementId, nilai) {
   const el = document.getElementById(elementId);
   // Mengekstrak ID bar (cth: "skpmg-s1" menjadi "bar-s1")

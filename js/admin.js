@@ -131,36 +131,59 @@ function muatDataTakwim() {
 }
 
 function muatDataSKPMg2() {
-  const docRef = doc(db, "tetapan", "skpmg2");
+  const docRef = doc(db, "efiling_skas", "prestasi");
+  
   onSnapshot(docRef, (docSnap) => {
     if(docSnap.exists()) {
       const data = docSnap.data();
-      setPeratusColor("skpmg-ketetapan", data.ketetapan || 0);
-      setPeratusColor("skpmg-disiplin", data.disiplin || 0);
-      setPeratusColor("skpmg-bantuan", data.bantuan || 0);
+      // Data sebenar dari Firestore memantau S1 hingga S4
+      setPeratusColor("skpmg-s1", data.s1 || 0);
+      setPeratusColor("skpmg-s2", data.s2 || 0);
+      setPeratusColor("skpmg-s3", data.s3 || 0);
+      setPeratusColor("skpmg-s4", data.s4 || 0);
     } else {
-      setPeratusColor("skpmg-ketetapan", 85);
-      setPeratusColor("skpmg-disiplin", 90);
-      setPeratusColor("skpmg-bantuan", 60);
+      // Jika belum ada data
+      setPeratusColor("skpmg-s1", 0);
+      setPeratusColor("skpmg-s2", 0);
+      setPeratusColor("skpmg-s3", 0);
+      setPeratusColor("skpmg-s4", 0);
     }
+  }, (error) => {
+    console.error("Ralat menarik data e-Filing:", error);
   });
 }
 
 function setPeratusColor(elementId, nilai) {
   const el = document.getElementById(elementId);
+  // Mengekstrak ID bar (cth: "skpmg-s1" menjadi "bar-s1")
+  const barId = `bar-${elementId.split('-')[1]}`; 
+  const barEl = document.getElementById(barId);
+  
   if(!el) return;
   
-  el.innerText = `${nilai}%`;
-  el.className = "font-bold";
+  const peratusan = parseFloat(nilai).toFixed(0); 
+  el.innerText = `${peratusan}%`;
   
-  if (nilai >= 85) {
+  // Reset kelas teks & bar
+  el.className = "font-bold text-xs";
+  if (barEl) {
+    barEl.style.width = `${peratusan}%`;
+    barEl.className = "h-1.5 rounded-full transition-all duration-700 ease-out"; // Animasi pergerakan
+  }
+  
+  // Logik warna: Hijau (>=85%), Kuning (>=60%), Merah (<60%)
+  if (peratusan >= 85) {
     el.classList.add("text-emerald-600");
-  } else if (nilai >= 60) {
+    if (barEl) barEl.classList.add("bg-emerald-500");
+  } else if (peratusan >= 60) {
     el.classList.add("text-amber-500");
+    if (barEl) barEl.classList.add("bg-amber-400");
   } else {
     el.classList.add("text-red-600");
+    if (barEl) barEl.classList.add("bg-red-500");
   }
 }
+
 
 // ==========================================
 // 3. FUNGSI GRAF & CARIAN 

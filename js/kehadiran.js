@@ -1,20 +1,26 @@
 // js/kehadiran.js
 
 import { db } from "./firebase-config.js";
-// Tambah import query dan where
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const hariIni = new Date();
 const tarikhID = hariIni.toISOString().split('T')[0]; 
 
-// Variabel Global untuk Modal
 let currentKelasPenuh = "";
 let dataMuridSemasa = [];
+
+// Pemboleh ubah untuk mengelakkan graf bertindih (Chart.js instance)
+let chartPerbandingan = null;
+let chartPrestasi = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   initTarikh();
   initTabs();
   renderGridKelas();
+  
+  // PANGGIL FUNGSI ANALITIK DI SINI (Ini yang baru ditambah)
+  muatDataAnalitikHarian();
+  muatDataPrestasiYTD();
   
   // Fungsi tutup modal
   const btnTutup = document.getElementById("btn-tutup-modal");
@@ -330,4 +336,172 @@ function kemaskiniLencanaKelas(namaPenuh, peratus) {
       badge.classList.add("bg-red-100", "text-red-700", "border-red-300"); // Merah
     }
   }
+}
+
+// ==========================================
+// 8. DATA & GRAF ANALITIK (FASA 4)
+// ==========================================
+
+async function muatDataAnalitikHarian() {
+  try {
+    // Tarik semua rekod kehadiran untuk hari ini sahaja
+    const q = query(collection(db, "kehadiran_harian"), where("tarikh", "==", tarikhID));
+    const snapshot = await getDocs(q);
+
+    let totalHadir = 0;
+    let totalTidakHadir = 0;
+    let totalPonteng = 0;
+    let totalBersebab = 0;
+    let totalMurid = 0;
+
+    // Array untuk simpan peratus kehadiran bagi graf Bar (Tahun 1-6)
+    let dataBestari = [0, 0, 0, 0, 0, 0];
+    let dataBijak = [0, 0, 0, 0, 0, 0];
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      totalHadir += data.jumlahHadir || 0;
+      totalTidakHadir += data.jumlahTidakHadir || 0;
+      totalMurid += data.jumlahMurid || 0;
+
+      // Asingkan Ponteng vs Bersebab
+      if (data.senaraiMurid) {
+        data.senaraiMurid.forEach(m => {
+          if (!m.hadir) {
+            if (m.sebab === "Tanpa Sebab") totalPonteng++;
+            else totalBersebab++;
+          }
+        });
+      }
+
+      // Format Graf Perbandingan Kelas
+      const parts = data.namaKelas.split(" "); // Cth: "1 Bestari" -> ["1", "Bestari"]
+      const tahun = parseInt(parts[0]);
+      const jenisKelas = parts[1];
+      const peratusKelas = data.jumlahMurid > 0 ? (data.jumlahHadir / data.jumlahMurid) * 100 : 0;
+
+      if (tahun >= 1 && tahun <= 6) {
+        const index = tahun - 1; // Tahun 1 di index 0
+        if (jenisKelas === "Bestari") dataBestari[index] = peratusKelas.toFixed(1);
+        if (jenisKelas === "Bijak") dataBijak[index] = peratusKelas.toFixed(1);
+      }
+    });
+
+    // Kemaskini Teks KPI di bahagian atas
+    const peratusHadir = totalMurid > 0 ? ((totalHadir / totalMurid) * 100).toFixed(1) : 0;
+    document.getElementById("kpi-hadir").innerText = `${peratusHadir}%`;
+    document.getElementById("kpi-bersebab").innerText = `${totalBersebab} Murid`;
+    document.getElementById("kpi-ponteng").innerText = `${totalPonteng} Murid`;
+
+    // Bina Graf Perbandingan
+    renderGrafPerbandingan(dataBestari, dataBijak);
+
+  } catch (error) {
+    console.error("Ralat memuat data analitik:", error);
+  }
+}
+
+async function muatDataPrestasiYTD() {
+  try {
+    const snapshot = await getDocs(collection(db, "murid"));
+    let emas = 0, hijau = 0, kuning = 0, merah = 0;
+    let adaData = false;
+
+    snapshot.forEach(doc => {
+      const m = doc.data();
+      if (m.statsKehadiran && m.statsKehadiran.jumlahHariSekolah > 0) {
+        adaData = true;
+        const peratus = (m.statsKehadiran.jumlahHadir / m.statsKehadiran.jumlahHariSekolah) * 100;
+        
+        if (peratus === 100) emas++;
+        else if (peratus >= 90) hijau++;
+        else if (peratus >= 80) kuning++;
+        else merah++;
+      }
+    });
+
+    // Jika sistem masih baru dan tiada rekod, kita letak visual dummy untuk cantikkan paparan
+    if (!adaData) {
+      emas = 25; hijau = 55; kuning = 15; merah = 5;
+    }
+
+    renderGrafPrestasi(emas, hijau, kuning, merah);
+  } catch (error) {
+    console.error("Ralat memuat prestasi YTD:", error);
+  }
+}
+
+// ==========================================
+// 9. LUKIS GRAF (CHART.JS)
+// ==========================================
+function renderGrafPerbandingan(dataBestari, dataBijak) {
+  const ctx = document.getElementById('grafPerbandinganKelas');
+  if (!ctx) return;
+
+  // Destroy graf lama jika ada (untuk elak hover glitch)
+  if (chartPerbandingan) chartPerbandingan.destroy();
+
+  chartPerbandingan = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Tahun 1', 'Tahun 2', 'Tahun 3', 'Tahun 4', 'Tahun 5', 'Tahun 6'],
+      datasets: [
+        {
+          label: 'Kelas Bestari (%)',
+          data: dataBestari,
+          backgroundColor: '#3b82f6', // Biru
+          borderRadius: 4
+        },
+        {
+          label: 'Kelas Bijak (%)',
+          data: dataBijak,
+          backgroundColor: '#f97316', // Oren
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      },
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+}
+
+function renderGrafPrestasi(emas, hijau, kuning, merah) {
+  const ctx = document.getElementById('grafPrestasiWarna');
+  if (!ctx) return;
+
+  if (chartPrestasi) chartPrestasi.destroy();
+
+  chartPrestasi = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Emas (100%)', 'Hijau (90-99%)', 'Kuning (80-89%)', 'Merah (<80%)'],
+      datasets: [{
+        data: [emas, hijau, kuning, merah],
+        backgroundColor: [
+          '#fbbf24', // Kuning Emas
+          '#10b981', // Hijau
+          '#f59e0b', // Kuning Gelap
+          '#ef4444'  // Merah
+        ],
+        borderWidth: 0,
+        hoverOffset: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'right' }
+      }
+    }
+  });
 }

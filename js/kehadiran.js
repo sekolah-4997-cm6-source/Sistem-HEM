@@ -12,15 +12,21 @@ let dataMuridSemasa = [];
 // Pemboleh ubah untuk mengelakkan graf bertindih (Chart.js instance)
 let chartPerbandingan = null;
 let chartPrestasi = null;
+let semuaDataMurid = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   initTarikh();
   initTabs();
   renderGridKelas();
   
-  // PANGGIL FUNGSI ANALITIK DI SINI (Ini yang baru ditambah)
+  // PANGGIL FUNGSI ANALITIK DI SINI
   muatDataAnalitikHarian();
   muatDataPrestasiYTD();
+  
+  // PANGGIL FUNGSI INDIVIDU & FILTER DI SINI (Fasa 5)
+  muatDataIndividu();
+  document.getElementById("filter-tahun").addEventListener("change", renderJadualIndividu);
+  document.getElementById("filter-kelas").addEventListener("change", renderJadualIndividu);
   
   // Fungsi tutup modal
   const btnTutup = document.getElementById("btn-tutup-modal");
@@ -503,5 +509,122 @@ function renderGrafPrestasi(emas, hijau, kuning, merah) {
         legend: { position: 'right' }
       }
     }
+  });
+}
+
+// ==========================================
+// 10. PRESTASI INDIVIDU & FILTER (FASA 5)
+// ==========================================
+
+async function muatDataIndividu() {
+  const tbody = document.getElementById("jadual-individu-container");
+  if(!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center italic text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Memuatkan data pelajar...</td></tr>`;
+
+  try {
+    // Tarik semua data murid dari Firebase
+    const snapshot = await getDocs(collection(db, "murid"));
+    semuaDataMurid = [];
+    
+    snapshot.forEach(doc => {
+      semuaDataMurid.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Paparkan jadual setelah data siap dimuat turun
+    renderJadualIndividu();
+    
+  } catch (error) {
+    console.error("Ralat memuat senarai individu:", error);
+    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Gagal memuatkan data individu.</td></tr>`;
+  }
+}
+
+function renderJadualIndividu() {
+  const tbody = document.getElementById("jadual-individu-container");
+  const filterTahun = document.getElementById("filter-tahun").value; // Cth: "Semua", "1", "2"
+  const filterKelas = document.getElementById("filter-kelas").value; // Cth: "Semua", "Bestari"
+
+  // 1. Lakukan Tapisan (Filter) Data
+  let dataDitapis = semuaDataMurid.filter(m => {
+    let tahunMurid = "Tiada";
+    let namaKelasMurid = "Tiada";
+    
+    // Pecahkan nilai "1 Bestari" kepada "1" dan "Bestari"
+    if(m.kelas) {
+       const parts = m.kelas.split(" ");
+       tahunMurid = parts[0];
+       namaKelasMurid = parts[1];
+    }
+
+    const matchTahun = filterTahun === "Semua" || tahunMurid === filterTahun;
+    const matchKelas = filterKelas === "Semua" || namaKelasMurid === filterKelas;
+    
+    return matchTahun && matchKelas;
+  });
+
+  // 2. Susun ikut nama Abjad (A-Z)
+  dataDitapis.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+
+  // Kosongkan jadual sedia ada
+  tbody.innerHTML = "";
+
+  // Jika tiada hasil tapisan
+  if(dataDitapis.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Tiada rekod murid ditemui untuk tapisan ini.</td></tr>`;
+    return;
+  }
+
+  // 3. Bina Baris Jadual (HTML)
+  dataDitapis.forEach((m) => {
+    // Pengiraan Peratusan Sebenar
+    let peratus = 100;
+    let ponteng = 0;
+    
+    if (m.statsKehadiran && m.statsKehadiran.jumlahHariSekolah > 0) {
+       peratus = Math.round((m.statsKehadiran.jumlahHadir / m.statsKehadiran.jumlahHariSekolah) * 100);
+       ponteng = m.statsKehadiran.hariTanpaSebab || 0;
+    }
+
+    // Tentukan Warna Lencana
+    let warnaLencana = "bg-slate-100 text-slate-600";
+    let labelLencana = "Tiada Data";
+
+    if(peratus === 100) { 
+      warnaLencana = "bg-amber-400 text-white shadow-sm border border-amber-500"; 
+      labelLencana = "Emas"; 
+    }
+    else if(peratus >= 90) { 
+      warnaLencana = "bg-emerald-100 text-emerald-700 border border-emerald-300"; 
+      labelLencana = "Hijau"; 
+    }
+    else if(peratus >= 80) { 
+      warnaLencana = "bg-yellow-100 text-yellow-700 border border-yellow-300"; 
+      labelLencana = "Kuning"; 
+    }
+    else { 
+      warnaLencana = "bg-red-100 text-red-700 border border-red-300 font-bold"; 
+      labelLencana = "Merah"; 
+    }
+
+    // Cipta baris (Row) HTML
+    const tr = document.createElement("tr");
+    tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors bg-white";
+    tr.innerHTML = `
+      <td class="p-3 font-semibold text-slate-800">${m.nama || "Tanpa Nama"}</td>
+      <td class="p-3 text-slate-600 text-xs">${m.kelas || "-"}</td>
+      <td class="p-3 text-center">
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${warnaLencana}">
+          ${labelLencana}
+        </span>
+      </td>
+      <td class="p-3 text-center font-bold text-slate-700">${peratus}%</td>
+      <td class="p-3 text-center">
+        <span class="${ponteng > 0 ? 'text-red-600 font-bold bg-red-50 px-2 py-1 rounded' : 'text-slate-400'}">
+          ${ponteng} Hari
+        </span>
+      </td>
+    `;
+    tbody.appendChild(tr);
   });
 }

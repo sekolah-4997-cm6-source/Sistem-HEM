@@ -1,6 +1,7 @@
 // js/efiling_skas.js
 import { db } from "./firebase-config.js";
-import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// TAMBAHAN: Masukkan setDoc di dalam import
+import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Masukkan Web App URL dari Google Apps Script anda di sini
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbykc-SfA8QkeIf_yZkRLUPsPouDJsAueZAnrpIOc1ckafo9snz1Edbtwnn41v2ZnpG4qg/exec";
@@ -43,13 +44,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ==========================================
-  // FUNGSI A: TRACKER DOKUMEN REAL-TIME
+  // FUNGSI A: TRACKER DOKUMEN REAL-TIME & SYNC KE ADMIN
   // ==========================================
   function langganStatistikFolders() {
     const qSemua = collection(db, "efiling");
     
-    onSnapshot(qSemua, (snapshot) => {
+    onSnapshot(qSemua, async (snapshot) => {
       const kiraan = { "S1": 0, "S2": 0, "S3": 0, "S4": 0 };
+      const peratusanSync = { "S1": 0, "S2": 0, "S3": 0, "S4": 0 }; // Objek untuk pegang nilai peratusan
 
       // Kira jumlah dokumen
       snapshot.forEach((doc) => {
@@ -67,6 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
         
         let peratus = Math.round((jumlahSediaAda / sasaran) * 100);
         if (peratus > 100) peratus = 100; 
+        
+        peratusanSync[std] = peratus; // Simpan ke objek sync
 
         const textKiraan = card.querySelector(".tracker-kiraan");
         const textPeratus = card.querySelector(".tracker-peratus");
@@ -86,6 +90,21 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
       });
+
+      // TAMBAHAN: Sync automatik ke Dashboard Admin
+      try {
+        const prestasiRef = doc(db, "efiling_skas", "prestasi");
+        await setDoc(prestasiRef, {
+          s1: peratusanSync["S1"],
+          s2: peratusanSync["S2"],
+          s3: peratusanSync["S3"],
+          s4: peratusanSync["S4"],
+          tarikh_kemaskini: new Date().toISOString()
+        }, { merge: true });
+        console.log("Status tracker berjaya dihantar ke Dashboard!");
+      } catch (error) {
+        console.error("Gagal sync ke admin:", error);
+      }
     });
   }
 
@@ -203,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
             base64: base64Data,
             mimeType: file.type,
             fileName: `${Date.now()}_${file.name}`,
-            kategoriFolder: std // <-- Hantar Kategori Standard untuk buat folder
+            kategoriFolder: std
           })
         });
 
@@ -243,6 +262,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // INITIALIZATION
   // ==========================================
-  langganStatistikFolders(); // 1. Mulakan tracker folder
-  langganFail(standardAktif); // 2. Papar fail untuk folder pertama (S1)
+  langganStatistikFolders(); 
+  langganFail(standardAktif);
 });

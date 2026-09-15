@@ -153,4 +153,54 @@
   <script src="../js/components/sidebar.js" type="module"></script>
   <script src="../js/kehadiran.js" type="module"></script>
 </body>
+
+<!-- ============================================== -->
+    <!--MODAL PENGISIAN KEHADIRAN (POP-UP)             -->
+    <!-- ============================================== -->
+    <div id="modal-kehadiran" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+      <!-- Modal Box -->
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden m-4">
+        
+        <!-- Header Modal -->
+        <div class="bg-slate-800 p-4 flex justify-between items-center text-white">
+          <div>
+            <h2 id="modal-tajuk" class="font-bold text-lg">Kehadiran: Memuatkan...</h2>
+            <p id="modal-tarikh" class="text-xs text-slate-300"></p>
+          </div>
+          <button id="btn-tutup-modal" class="text-slate-300 hover:text-white transition">
+            <i class="fa-solid fa-xmark text-xl"></i>
+          </button>
+        </div>
+        
+        <!-- Body Modal (Senarai Murid - Boleh Skrol) -->
+        <div class="p-0 overflow-y-auto flex-1 bg-slate-50">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-white sticky top-0 shadow-sm z-10 border-b border-slate-200">
+              <tr class="text-[10px] uppercase tracking-wider text-slate-500">
+                <th class="p-3 pl-4">#</th>
+                <th class="p-3 w-1/2">Nama Murid</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3 pr-4">Sebab (Jika Tidak Hadir)</th>
+              </tr>
+            </thead>
+            <tbody id="modal-senarai-murid" class="text-xs text-slate-700 divide-y divide-slate-200">
+              <!-- Baris murid akan diisi oleh JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer Modal (Kiraan & Butang Simpan) -->
+        <div class="p-4 bg-white border-t border-slate-200 flex justify-between items-center">
+          <div class="text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+            <span class="font-bold text-emerald-600" id="kiraan-hadir">Hadir: 0</span> &nbsp;|&nbsp; 
+            <span class="font-bold text-red-600" id="kiraan-tak-hadir">Tidak Hadir: 0</span>
+          </div>
+          <button id="btn-simpan-kehadiran" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-sm transition shadow-sm flex items-center">
+            <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Simpan Rekod
+          </button>
+        </div>
+
+      </div>
+    </div>
+  
 </html>

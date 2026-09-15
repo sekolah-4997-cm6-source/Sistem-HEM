@@ -28,6 +28,12 @@ document.addEventListener("DOMContentLoaded", () => {
             <span>Senarai Murid</span>
           </a>
 
+          <!-- MENU KEHADIRAN (DITAMBAH DI SINI) -->
+          <a href="kehadiran.html" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-700 transition w-full text-slate-300 hover:text-white">
+            <i class="fa-solid fa-clipboard-user w-5"></i>
+            <span>Kehadiran</span>
+          </a>
+
           <a href="disiplin.html" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-700 transition w-full text-slate-300 hover:text-white">
             <i class="fa-solid fa-scale-balanced w-5"></i>
             <span>Sahsiah & Disiplin</span>

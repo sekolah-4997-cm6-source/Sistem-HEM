@@ -1,7 +1,7 @@
 // js/admin.js
 
 import { db } from "./firebase-config.js";
-import { collection, getDocs, onSnapshot, query, where, limit, orderBy, doc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, onSnapshot, query, where, limit, orderBy, doc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let enrolmenChartInstance = null; 
 let kehadiranChartInstance = null; // Tambah instance untuk graf kehadiran
@@ -99,6 +99,7 @@ async function muatDataDashboard() {
 // ==========================================
 // 2. FUNGSI TAKWIM & e-FILING SKPMg2
 // ==========================================
+// admin.js
 function muatDataTakwim() {
   const qTakwim = query(collection(db, "takwim"), orderBy("tarikh", "asc"), limit(4));
   onSnapshot(qTakwim, (snapshot) => {
@@ -112,22 +113,52 @@ function muatDataTakwim() {
         return;
     }
 
-    snapshot.forEach(doc => {
-        const data = doc.data();
+    // PENTING: Gunakan 'd' sebagai ganti 'doc' untuk mengelakkan ralat 
+    // pertembungan dengan fungsi doc() dari Firestore
+    snapshot.forEach(d => {
+        const data = d.data();
+        const docId = d.id; // Dapatkan ID dokumen untuk dipadam
         let formattedDate = data.tarikh; 
         
         try {
-            const d = new Date(data.tarikh);
-            if(!isNaN(d)) formattedDate = d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' });
+            const dateObj = new Date(data.tarikh);
+            if(!isNaN(dateObj)) formattedDate = dateObj.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' });
         } catch(e) {}
 
+        // Susun atur senarai dengan Flexbox untuk butang padam di kanan (Mempunyai efek hover 'group')
         container.innerHTML += `
-          <li class="flex items-center space-x-2">
-            <i class="fa-regular fa-calendar text-slate-400"></i>
-            <span><strong>${formattedDate}:</strong> ${data.program}</span>
+          <li class="flex items-center justify-between border-b border-slate-50 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0 group">
+            <div class="flex items-center space-x-2">
+              <i class="fa-regular fa-calendar text-slate-400"></i>
+              <span><strong>${formattedDate}:</strong> ${data.program}</span>
+            </div>
+            <button data-id="${docId}" class="btn-padam-takwim text-slate-300 hover:text-red-500 transition px-2 opacity-0 group-hover:opacity-100" title="Padam Program">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
           </li>
         `;
     });
+
+    // Pasang 'Event Listener' untuk butang padam selepas senarai di-render
+    const butangPadam = document.querySelectorAll(".btn-padam-takwim");
+    butangPadam.forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const idPadam = e.currentTarget.getAttribute("data-id");
+        
+        if (confirm("Adakah anda pasti mahu memadam program ini dari takwim?")) {
+          try {
+            // Proses padam dokumen dari pangkalan data
+            await deleteDoc(doc(db, "takwim", idPadam));
+            // Nota: Tiada alert berjaya diletakkan kerana onSnapshot 
+            // akan automatik membuang rekod dari paparan serta-merta.
+          } catch (error) {
+            console.error("Gagal memadam program takwim:", error);
+            alert("Ralat memadam program. Sila cuba lagi.");
+          }
+        }
+      });
+    });
+
   });
 }
 
